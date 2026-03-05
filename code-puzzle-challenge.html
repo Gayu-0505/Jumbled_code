@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Puzzle Challenge - Multi-Code Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #00f0ff;
+            --secondary: #7000ff;
+            --accent: #ff006e;
+            --dark: #0a0a0f;
+            --glass: rgba(255, 255, 255, 0.03);
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark);
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+        
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -2;
+        }
+        
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        
+        .code-block {
+            background: #1a1a2e;
+            border: 1px solid #2a2a3e;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .code-block::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 240, 255, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(0, 240, 255, 0.6); }
+        }
+        
+        .animate-slide-in { animation: slideIn 0.6s ease-out forwards; }
+        .animate-shake { animation: shake 0.5s ease-in-out; }
+        .animate-pulse-glow { animation: pulse-glow 2s infinite; }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: #000;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 240, 255, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #7000ff, #ff006e);
+            color: white;
+        }
+        
+        .progress-segment {
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            flex: 1;
+            margin: 0 2px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .code-set-card {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .riddle-subcard {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 0.5rem;
+            margin-left: 1rem;
+            border-left: 3px solid var(--secondary);
+        }
+        
+        .timer-display {
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 2px;
+        }
+        
+        .countdown-bar {
+            height: 4px;
+            background: linear-gradient(90deg, #00f0ff, #7000ff);
+            transition: width 1s linear;
+        }
+        
+        input, textarea, select {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 8px;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0,240,255,0.1);
+        }
+        
+        .tab-active {
+            border-bottom: 2px solid var(--primary);
+            color: var(--primary);
+        }
+        
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            pointer-events: none;
+            animation: confetti-fall 3s ease-out forwards;
+        }
+        
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        .set-indicator {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .set-completed {
+            background: linear-gradient(135deg, #00f0ff, #7000ff);
+            color: #000;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+        }
+
+        .set-pending {
+            background: rgba(255,255,255,0.05);
+            color: #666;
+            border: 2px dashed rgba(255,255,255,0.2);
+        }
+
+        .set-current {
+            background: rgba(0, 240, 255, 0.2);
+            border: 3px solid var(--primary);
+            color: var(--primary);
+            animation: pulse-glow 2s infinite;
+        }
+
+        .part-badge {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(0,240,255,0.2);
+            color: var(--primary);
+            font-size: 0.75rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+        }
+
+        .fragment-part {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(0,240,255,0.3);
+            border-radius: 6px;
+            padding: 0.5rem;
+            margin: 0.25rem;
+            display: inline-flex;
+            align-items: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="bg-grid"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass-panel border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-code text-cyan-400 text-2xl"></i>
+                    <span class="text-xl font-bold tracking-wider bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+                        CODE<span class="text-white">PUZZLE</span>
+                        <span class="text-xs ml-2 text-gray-500 font-normal">PRO</span>
+                    </span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="showSection('landing')" class="text-gray-300 hover:text-white transition-colors">
+                        <i class="fas fa-home mr-1"></i> Home
+                    </button>
+                    <button onclick="showAdminLogin()" class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium transition-all border border-white/20">
+                        <i class="fas fa-lock mr-1"></i> Admin
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="pt-20 pb-12 px-4 max-w-7xl mx-auto">
+        
+        <!-- LANDING PAGE -->
+        <section id="landing-section" class="min-h-[80vh] flex items-center justify-center animate-slide-in">
+            <div class="glass-panel rounded-2xl p-8 md:p-12 max-w-3xl w-full text-center">
+                <div class="mb-8">
+                    <div class="w-20 h-20 mx-auto bg-gradient-to-br from-cyan-400 to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-2xl">
+                        <i class="fas fa-puzzle-piece text-3xl text-white"></i>
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-white via-cyan-200 to-purple-200 bg-clip-text text-transparent">
+                        Multi-Code Challenge
+                    </h1>
+                    <p class="text-gray-400 text-lg">Solve riddles. Collect code parts. Build the final sequence.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <button onclick="showSection('play')" class="group p-6 rounded-xl bg-gradient-to-br from-cyan-400/20 to-purple-600/20 border border-cyan-400/30 hover:border-cyan-400 transition-all">
+                        <i class="fas fa-play-circle text-4xl text-cyan-400 mb-3 group-hover:scale-110 transition-transform"></i>
+                        <h3 class="text-xl font-bold text-white mb-1">Join Challenge</h3>
+                        <p class="text-sm text-gray-400">Enter as participant</p>
+                    </button>
+                    
+                    <button onclick="showAdminLogin()" class="group p-6 rounded-xl bg-gradient-to-br from-purple-400/20 to-pink-600/20 border border-purple-400/30 hover:border-purple-400 transition-all">
+                        <i class="fas fa-cog text-4xl text-purple-400 mb-3 group-hover:scale-110 transition-transform"></i>
+                        <h3 class="text-xl font-bold text-white mb-1">Event Admin</h3>
+                        <p class="text-sm text-gray-400">Configure codes & monitor</p>
+                    </button>
+                </div>
+
+                <div class="text-xs text-gray-500 flex justify-center gap-6">
+                    <span><i class="fas fa-layer-group text-cyan-400 mr-1"></i> Multiple Codes</span>
+                    <span><i class="fas fa-puzzle-piece text-purple-400 mr-1"></i> Part Collection</span>
+                    <span><i class="fas fa-trophy text-yellow-400 mr-1"></i> Ranked</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ADMIN LOGIN -->
+        <section id="admin-login-section" class="hidden min-h-[60vh] flex items-center justify-center">
+            <div class="glass-panel rounded-2xl p-8 max-w-md w-full animate-slide-in">
+                <div class="text-center mb-6">
+                    <i class="fas fa-lock text-4xl text-purple-400 mb-3"></i>
+                    <h2 class="text-2xl font-bold">Admin Access</h2>
+                    <p class="text-sm text-gray-400">Enter credentials to manage event</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Admin Password</label>
+                        <input type="password" id="admin-password" placeholder="Enter password" 
+                            onkeypress="if(event.key==='Enter') loginAdmin()">
+                    </div>
+                    <button onclick="loginAdmin()" class="btn-primary w-full py-3 rounded-xl font-bold">
+                        <i class="fas fa-sign-in-alt mr-2"></i> Login
+                    </button>
+                    <button onclick="showSection('landing')" class="w-full py-2 text-sm text-gray-400 hover:text-white">
+                        ← Back to Home
+                    </button>
+                </div>
+                
+                <div id="login-error" class="hidden mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm text-center animate-shake">
+                    <i class="fas fa-exclamation-circle mr-1"></i> Incorrect password
+                </div>
+            </div>
+        </section>
+
+        <!-- ADMIN DASHBOARD -->
+        <section id="admin-section" class="hidden">
+            <div class="flex flex-col lg:flex-row gap-6">
+                <!-- Sidebar -->
+                <div class="lg:w-64 glass-panel rounded-xl p-4 h-fit">
+                    <div class="mb-6 px-2">
+                        <div class="text-xs text-gray-500 uppercase tracking-wider mb-1">Logged in as</div>
+                        <div class="font-bold text-cyan-400">Event Admin</div>
+                    </div>
+                    
+                    <nav class="space-y-2">
+                        <button onclick="switchAdminTab('codesets')" id="tab-codesets" class="w-full text-left px-4 py-3 rounded-lg bg-white/10 text-cyan-400 border-l-2 border-cyan-400">
+                            <i class="fas fa-layer-group w-6"></i> Code Sets
+                        </button>
+                        <button onclick="switchAdminTab('security')" id="tab-security" class="w-full text-left px-4 py-3 rounded-lg hover:bg-white/5 text-gray-300 transition-all">
+                            <i class="fas fa-shield-alt w-6"></i> Security
+                        </button>
+                        <button onclick="switchAdminTab('settings')" id="tab-settings" class="w-full text-left px-4 py-3 rounded-lg hover:bg-white/5 text-gray-300 transition-all">
+                            <i class="fas fa-sliders-h w-6"></i> Settings
+                        </button>
+                        <button onclick="switchAdminTab('preview')" id="tab-preview" class="w-full text-left px-4 py-3 rounded-lg hover:bg-white/5 text-gray-300 transition-all">
+                            <i class="fas fa-eye w-6"></i> Preview
+                        </button>
+                        <button onclick="switchAdminTab('results')" id="tab-results" class="w-full text-left px-4 py-3 rounded-lg hover:bg-white/5 text-gray-300 transition-all">
+                            <i class="fas fa-chart-bar w-6"></i> Results
+                        </button>
+                    </nav>
+                    
+                    <button onclick="logoutAdmin()" class="w-full mt-6 px-4 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all text-sm">
+                        <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                    </button>
+                </div>
+
+                <!-- Main Content -->
+                <div class="flex-1">
+                    
+                    <!-- Code Sets Tab -->
+                    <div id="admin-codesets" class="admin-tab">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h2 class="text-2xl font-bold">Code Sets Management</h2>
+                                <p class="text-sm text-gray-400">Each set = 1 Complete Code (built from multiple parts)</p>
+                            </div>
+                            <button onclick="addNewCodeSet()" class="px-4 py-2 rounded-lg bg-cyan-400/20 text-cyan-400 border border-cyan-400/50 hover:bg-cyan-400/30 transition-all text-sm">
+                                <i class="fas fa-plus mr-1"></i> Add Code Set
+                            </button>
+                        </div>
+
+                        <div id="codesets-container" class="space-y-6">
+                            <!-- Code sets injected here -->
+                        </div>
+
+                        <div class="mt-6 p-4 rounded-lg bg-blue-400/10 border border-blue-400/30 text-blue-200 text-sm">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            <strong>Structure:</strong> Each Code Set contains multiple riddles. Each riddle unlocks ONE PART of that set's code. All parts combined form the complete code. Participants collect all codes from all sets, then arrange them in order.
+                        </div>
+                    </div>
+
+                    <!-- Security Tab -->
+                    <div id="admin-security" class="admin-tab hidden">
+                        <h2 class="text-2xl font-bold mb-6">Security Settings</h2>
+                        
+                        <div class="glass-panel rounded-xl p-6 space-y-6 max-w-lg">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    <i class="fas fa-key mr-1 text-yellow-400"></i>
+                                    Change Admin Password
+                                </label>
+                                <div class="space-y-3">
+                                    <input type="password" id="current-password" placeholder="Current Password">
+                                    <input type="password" id="new-password" placeholder="New Password">
+                                    <input type="password" id="confirm-password" placeholder="Confirm New Password">
+                                </div>
+                            </div>
+
+                            <button onclick="changePassword()" class="btn-primary px-6 py-3 rounded-lg font-bold w-full">
+                                <i class="fas fa-save mr-2"></i> Update Password
+                            </button>
+
+                            <div id="password-message" class="hidden p-3 rounded-lg text-sm text-center"></div>
+                        </div>
+                    </div>
+
+                    <!-- Settings Tab -->
+                    <div id="admin-settings" class="admin-tab hidden">
+                        <h2 class="text-2xl font-bold mb-6">Global Settings</h2>
+                        
+                        <div class="glass-panel rounded-xl p-6 space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        <i class="fas fa-clock mr-1 text-cyan-400"></i>
+                                        Default Time per Riddle (seconds)
+                                    </label>
+                                    <input type="number" id="default-riddle-time" value="60" min="10" max="300">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        <i class="fas fa-hourglass-half mr-1 text-purple-400"></i>
+                                        Final Assembly Time (seconds)
+                                    </label>
+                                    <input type="number" id="time-assembly" value="300" min="60" max="600">
+                                </div>
+                            </div>
+
+                            <div class="border-t border-white/10 pt-6">
+                                <label class="flex items-center gap-3 cursor-pointer mb-3">
+                                    <input type="checkbox" id="enable-global-timer" checked class="w-5 h-5 rounded border-gray-600 text-cyan-400 focus:ring-cyan-400">
+                                    <span class="text-gray-300">Enable global countdown timer</span>
+                                </label>
+                                
+                                <label class="flex items-center gap-3 cursor-pointer mb-3">
+                                    <input type="checkbox" id="allow-restart" checked class="w-5 h-5 rounded border-gray-600 text-cyan-400 focus:ring-cyan-400">
+                                    <span class="text-gray-300">Allow restart on wrong answer (per set)</span>
+                                </label>
+                            </div>
+
+                            <button onclick="saveGlobalSettings()" class="btn-primary px-6 py-3 rounded-lg font-bold">
+                                <i class="fas fa-save mr-2"></i> Save Settings
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Preview Tab -->
+                    <div id="admin-preview" class="admin-tab hidden">
+                        <h2 class="text-2xl font-bold mb-6">Participant Preview</h2>
+                        <div class="glass-panel rounded-xl p-4 bg-black/40">
+                            <div class="flex justify-between items-center mb-4 pb-4 border-b border-white/10">
+                                <span class="text-sm text-gray-400">This is exactly what participants will see</span>
+                                <button onclick="renderPreview()" class="text-sm text-cyan-400 hover:text-cyan-300">
+                                    <i class="fas fa-redo mr-1"></i> Refresh
+                                </button>
+                            </div>
+                            <div id="preview-container" class="min-h-[400px]">
+                                <!-- Preview injected here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Tab -->
+                    <div id="admin-results" class="admin-tab hidden">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold">Live Results</h2>
+                            <button onclick="exportResults()" class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm transition-all">
+                                <i class="fas fa-download mr-1"></i> Export CSV
+                            </button>
+                        </div>
+                        
+                        <div class="glass-panel rounded-xl overflow-hidden">
+                            <table class="w-full text-left">
+                                <thead class="bg-white/5 text-gray-400 text-xs uppercase">
+                                    <tr>
+                                        <th class="px-6 py-3">Rank</th>
+                                        <th class="px-6 py-3">Participant</th>
+                                        <th class="px-6 py-3">Codes Completed</th>
+                                        <th class="px-6 py-3">Total Time</th>
+                                        <th class="px-6 py-3">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="results-table" class="divide-y divide-white/5">
+                                    <!-- Results injected here -->
+                                </tbody>
+                            </table>
+                            <div id="no-results" class="p-8 text-center text-gray-500">
+                                <i class="fas fa-inbox text-3xl mb-2 opacity-30"></i>
+                                <p>No participants yet</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PARTICIPANT PLAY SECTION -->
+        <section id="play-section" class="hidden">
+            <!-- Registration -->
+            <div id="player-registration" class="min-h-[60vh] flex items-center justify-center animate-slide-in">
+                <div class="glass-panel rounded-2xl p-8 max-w-md w-full text-center">
+                    <div class="w-16 h-16 mx-auto bg-gradient-to-br from-cyan-400 to-purple-600 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-user-astronaut text-2xl text-white"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold mb-2">Enter the Challenge</h2>
+                    <p class="text-gray-400 text-sm mb-6">Collect all code parts and arrange them in order</p>
+                    
+                    <div id="event-info" class="mb-6 p-4 rounded-lg bg-white/5 text-left text-sm space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Total Codes:</span>
+                            <span class="text-cyan-400 font-bold" id="preview-set-count">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Riddles per Code:</span>
+                            <span class="text-purple-400 font-bold" id="preview-riddle-count">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Total Riddles:</span>
+                            <span class="text-pink-400 font-bold" id="preview-total-riddles">-</span>
+                        </div>
+                    </div>
+                    
+                    <input type="text" id="participant-name" placeholder="Your Name" class="mb-4" onkeypress="if(event.key==='Enter') registerPlayer()">
+                    <input type="email" id="participant-email" placeholder="Email (optional)" class="mb-6">
+                    
+                    <button onclick="registerPlayer()" class="btn-primary w-full py-3 rounded-xl font-bold mb-4">
+                        <i class="fas fa-play mr-2"></i> Start Challenge
+                    </button>
+                    
+                    <button onclick="showSection('landing')" class="text-sm text-gray-400 hover:text-white">
+                        ← Back
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game Interface -->
+            <div id="game-interface" class="hidden">
+                <!-- Global Timer Bar -->
+                <div class="fixed top-16 left-0 w-full h-1 bg-gray-800 z-40">
+                    <div id="game-timer-bar" class="countdown-bar" style="width: 100%"></div>
+                </div>
+                
+                <!-- Header Stats -->
+                <div class="fixed top-20 left-0 right-0 z-40 flex justify-between px-4">
+                    <div class="glass-panel px-4 py-2 rounded-lg">
+                        <span class="text-xs text-gray-400 mr-2">Time Left</span>
+                        <span id="game-timer-display" class="mono text-cyan-400 font-bold">00:00</span>
+                    </div>
+                    <div class="glass-panel px-4 py-2 rounded-lg">
+                        <span class="text-xs text-gray-400 mr-2">Codes</span>
+                        <span id="sets-progress" class="mono text-purple-400 font-bold">0/0</span>
+                    </div>
+                </div>
+
+                <div class="mt-16 max-w-5xl mx-auto">
+                    
+                    <!-- Sets Overview -->
+                    <div id="sets-overview" class="mb-8">
+                        <h3 class="text-lg font-bold mb-4 text-center">Code Collection Progress</h3>
+                        <div class="flex justify-center gap-4 flex-wrap" id="sets-indicators">
+                            <!-- Set indicators injected here -->
+                        </div>
+                    </div>
+
+                    <!-- Current Set Gameplay -->
+                    <div id="current-set-gameplay" class="max-w-3xl mx-auto">
+                        <div class="glass-panel rounded-2xl p-8 mb-6">
+                            <div class="flex justify-between items-start mb-6">
+                                <div>
+                                    <span class="px-3 py-1 rounded-full bg-cyan-400/10 text-cyan-400 text-xs font-bold border border-cyan-400/20" id="current-set-info">
+                                        CODE 1
+                                    </span>
+                                    <span class="ml-2 text-xs text-gray-500" id="riddle-progress">Part 1/5</span>
+                                </div>
+                                <span class="text-xs text-gray-500" id="set-timer">Time: <span class="text-yellow-400">--</span></span>
+                            </div>
+
+                            <h3 class="text-2xl font-bold mb-8 leading-relaxed" id="game-question">Loading...</h3>
+
+                            <div class="space-y-3" id="game-options">
+                                <!-- Options injected here -->
+                            </div>
+
+                            <div id="game-feedback" class="hidden mt-4 p-4 rounded-lg animate-shake"></div>
+                        </div>
+
+                        <!-- Current Code Parts Collection -->
+                        <div class="glass-panel rounded-2xl p-6 mb-6">
+                            <h4 class="text-sm font-bold text-gray-300 mb-4 uppercase tracking-wider flex items-center">
+                                <i class="fas fa-puzzle-piece text-cyan-400 mr-2"></i>
+                                Current Code Parts
+                            </h4>
+                            <div id="current-parts" class="flex flex-wrap gap-2">
+                                <p class="text-gray-500 text-sm w-full text-center py-4">Complete riddles to collect code parts</p>
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-white/10">
+                                <div class="flex justify-between text-xs text-gray-400 mb-1">
+                                    <span>Assembly Progress</span>
+                                    <span id="parts-count">0/5 parts</span>
+                                </div>
+                                <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+                                    <div id="parts-progress" class="h-full bg-gradient-to-r from-cyan-400 to-purple-500 transition-all" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Completed Codes -->
+                        <div id="completed-sets-container" class="hidden glass-panel rounded-2xl p-6">
+                            <h4 class="text-sm font-bold text-gray-300 mb-4 uppercase tracking-wider text-green-400 flex items-center">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                Completed Codes
+                            </h4>
+                            <div id="completed-codes-list" class="space-y-3">
+                                <!-- Completed codes injected here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Final Assembly -->
+                    <div id="final-assembly" class="hidden max-w-4xl mx-auto animate-slide-in">
+                        <div class="glass-panel rounded-2xl p-8 text-center">
+                            <div class="w-16 h-16 mx-auto bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-trophy text-2xl text-white"></i>
+                            </div>
+                            <h2 class="text-3xl font-bold mb-2">Final Assembly</h2>
+                            <p class="text-gray-400 mb-6">Arrange all complete codes in the correct order</p>
+
+                            <div class="text-left mb-6">
+                                <p class="text-sm text-gray-400 mb-3">Drag to reorder all codes:</p>
+                                <div id="final-assembly-pieces" class="space-y-3 min-h-[300px] p-4 rounded-xl bg-black/20 border-2 border-dashed border-white/10">
+                                    <!-- All codes draggable -->
+                                </div>
+                            </div>
+
+                            <div class="flex gap-3 justify-center">
+                                <button onclick="checkFinalAssembly()" class="btn-primary px-8 py-3 rounded-xl font-bold">
+                                    <i class="fas fa-check mr-2"></i> Submit Final Order
+                                </button>
+                            </div>
+
+                            <div id="final-error" class="hidden mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm"></div>
+                        </div>
+                    </div>
+
+                    <!-- Game Result -->
+                    <div id="game-result" class="hidden max-w-2xl mx-auto text-center animate-slide-in py-12">
+                        <div id="victory-content">
+                            <div class="w-24 h-24 mx-auto bg-gradient-to-br from-cyan-400 to-purple-600 rounded-3xl flex items-center justify-center mb-6 shadow-2xl animate-pulse-glow">
+                                <i class="fas fa-crown text-4xl text-white"></i>
+                            </div>
+                            <h2 class="text-4xl font-bold mb-2 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">CHALLENGE COMPLETE!</h2>
+                            <p class="text-xl text-gray-300 mb-6">Congratulations, <span id="winner-name-display" class="text-cyan-400 font-bold"></span>!</p>
+                            
+                            <div class="glass-panel rounded-xl p-6 mb-6 inline-block">
+                                <div class="grid grid-cols-3 gap-8 text-center">
+                                    <div>
+                                        <div class="text-2xl font-bold text-cyan-400 mono" id="final-time">00:00</div>
+                                        <div class="text-xs text-gray-400 uppercase">Time</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-2xl font-bold text-purple-400 mono" id="final-codes">0</div>
+                                        <div class="text-xs text-gray-400 uppercase">Codes</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-2xl font-bold text-yellow-400 mono" id="final-rank">#--</div>
+                                        <div class="text-xs text-gray-400 uppercase">Rank</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="defeat-content" class="hidden">
+                            <div class="w-24 h-24 mx-auto bg-red-500/20 rounded-3xl flex items-center justify-center mb-6">
+                                <i class="fas fa-times-circle text-4xl text-red-400"></i>
+                            </div>
+                            <h2 class="text-4xl font-bold mb-2 text-red-400">Challenge Failed</h2>
+                            <p class="text-gray-300 mb-6" id="defeat-reason">Time's up!</p>
+                        </div>
+
+                        <div class="space-x-3">
+                            <button onclick="location.reload()" class="btn-primary px-6 py-3 rounded-xl font-bold">
+                                <i class="fas fa-redo mr-2"></i> Try Again
+                            </button>
+                            <button onclick="showSection('landing')" class="px-6 py-3 rounded-xl border border-white/20 text-gray-300 hover:bg-white/5">
+                                Home
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // DEFAULT CONFIGURATION - 10 Codes with 5 Riddles each
+        const defaultConfig = {
+            adminPassword: 'admin123',
+            codeSets: [
+                {
+                    id: 'code1',
+                    name: 'Initialization',
+                    order: 0,
+                    code: "function initializeSystem() {",
+                    riddles: [
+                        { id: 'c1r1', question: "I have cities, but no houses. I have mountains, but no trees. What am I?", options: ["A Map", "A Computer", "A Dream", "A Cloud"], correct: 0, part: "function", timeLimit: 60 },
+                        { id: 'c1r2', question: "The more you have of me, the less you see. What am I?", options: ["Darkness", "Light", "Fog", "Glass"], correct: 0, part: " initializeSystem()", timeLimit: 60 },
+                        { id: 'c1r3', question: "I am taken from a mine and shut up in a wooden case. What am I?", options: ["Gold", "Coal", "Pencil Lead", "Diamond"], correct: 2, part: " {", timeLimit: 60 },
+                        { id: 'c1r4', question: "I have keys but no locks. What am I?", options: ["Keyboard", "Piano", "Map", "All of the above"], correct: 3, part: "  ", timeLimit: 60 },
+                        { id: 'c1r5', question: "I can be cracked, made, told, and played. What am I?", options: ["A Joke", "An Egg", "A Game", "A Code"], correct: 0, part: "// Start", timeLimit: 60 }
+                    ]
+                },
+                {
+                    id: 'code2',
+                    name: 'Configuration',
+                    order: 1,
+                    code: "  const config = loadConfig();",
+                    riddles: [
+                        { id: 'c2r1', question: "I have a neck but no head. What am I?", options: ["A Bottle", "A Shirt", "A Guitar", "A River"], correct: 0, part: "  const", timeLimit: 60 },
+                        { id: 'c2r2', question: "I go up but never come down. What am I?", options: ["Age", "Balloon", "Stairs", "Temperature"], correct: 0, part: " config", timeLimit: 60 },
+                        { id: 'c2r3', question: "I have hands but cannot clap. What am I?", options: ["A Clock", "A Robot", "A Statue", "A Glove"], correct: 0, part: " =", timeLimit: 60 },
+                        { id: 'c2r4', question: "I am full of holes but still hold water. What am I?", options: ["A Sponge", "A Net", "A Bucket", "A Filter"], correct: 0, part: " loadConfig()", timeLimit: 60 },
+                        { id: 'c2r5', question: "I have a spine but no bones. What am I?", options: ["A Book", "A Snake", "A Plant", "A Hedgehog"], correct: 0, part: ";", timeLimit: 60 }
+                    ]
+                },
+                {
+                    id: 'code3',
+                    name: 'Authentication',
+                    order: 2,
+                    code: "  if (authenticateUser()) {",
+                    riddles: [
+                        { id: 'c3r1', question: "I fly without wings. What am I?", options: ["Time", "A Plane", "A Bird", "Wind"], correct: 0, part: "  if", timeLimit: 60 },
+                        { id: 'c3r2', question: "I have a face but no eyes. What am I?", options: ["A Clock", "A Coin", "A Dice", "A Mask"], correct: 0, part: " (", timeLimit: 60 },
+                        { id: 'c3r3', question: "I am always in front of you but can never be seen. What am I?", options: ["Future", "Air", "Shadow", "Thought"], correct: 0, part: "authenticateUser()", timeLimit: 60 },
+                        { id: 'c3r4', question: "I get wet while drying. What am I?", options: ["A Towel", "A Floor", "A Mop", "A Hair"], correct: 0, part: ")", timeLimit: 60 },
+                        { id: 'c3r5', question: "I have branches but no fruit, leaves, or trunk. What am I?", options: ["A Bank", "A Tree", "A River", "A Family"], correct: 0, part: " {", timeLimit: 60 }
+                    ]
+                },
+                {
+                    id: 'code4',
+                    name: 'Data Loading',
+                    order: 3,
+                    code: "    const data = fetchData();",
+                    riddles: [
+                        { id: 'c4r1', question: "I shrink when you use me. What am I?", options: ["Soap", "Money", "Time", "A Pencil"], correct: 0, part: "    const", timeLimit: 60 },
+                        { id: 'c4r2', question: "I have a head and a tail but no body. What am I?", options: ["A Coin", "A Snake", "A Rope", "A Worm"], correct: 0, part: " data", timeLimit: 60 },
+                        { id: 'c4r3', question: "I am heavy forward but backward I am not. What am I?", options: ["Ton", "A Car", "A Rock", "A Ship"], correct: 0, part: " =", timeLimit: 60 },
+                        { id: 'c4r4', question: "I have an end but no beginning. What am I?", options: ["A Stick", "A Road", "A Story", "A Line"], correct: 0, part: " fetchData()", timeLimit: 60 },
+                        { id: 'c4r5', question: "I am bought by the yard but worn by the foot. What am I?", options: ["Carpet", "Shoes", "Socks", "Road"], correct: 0, part: ";", timeLimit: 60 }
+                    ]
+                },
+                {
+                    id: 'code5',
+                    name: 'Processing',
+                    order: 4,
+                    code: "    processData(data);",
+                    riddles: [
+                        { id: 'c5r1', question: "I am not alive but I grow. What am I?", options: ["Fire", "A Crystal", "A Cloud", "A Plant"], correct: 0, part: "    processData", timeLimit: 60 },
+                        { id: 'c5r2', question: "I have a thumb and four fingers but I am not alive. What am I?", options: ["A Glove", "A Hand", "A Robot", "A Puppet"], correct: 0, part: "(", timeLimit: 60 },
+                        { id: 'c5r3', question: "I am always coming but never arrive. What am I?", options: ["Tomorrow", "A Train", "A Letter", "Spring"], correct: 0, part: "data", timeLimit: 60 },
+                        { id: 'c5r4', question: "I can be broken without being touched. What am I?", options: ["A Promise", "A Glass", "A Heart", "Silence"], correct: 0, part: ")", timeLimit: 60 },
+                        { id: 'c5r5', question: "I have a bed but I never sleep. What am I?", options: ["A River", "A Garden", "A Truck", "A Book"], correct: 0, part: ";", timeLimit: 60 }
+                    ]
+                },
+                {
+                    id: 'code6',
+                    name: 'Validation',
+                    order: 5,
+                    code: "    if (validateInput(data)) {",
+                    riddles: [
+                        { id: 'c6r1', question: "I have cities but no houses. What am I?", options: ["A Map", "A Globe", "A Book", "A Dream"], correct: 0, part: "    if", timeLimit: 60 },
+                        { id: 'c6r2', question: "The more you take, the more you leave behind. What am I?", options: ["Footsteps", "Memories", "Time", "Money"], correct: 0, part: " (", timeLimit: 60 },
+                        { id: 'c6r3', question: "I am tall when I am young and short when I am old. What am I?", options: ["A Candle", "A Person", "A Tree", "A Shadow"], correct: 0, part: "validateInput", timeLimit: 60 },
+                        { id: 'c6r4', question: "I have a heart that doesn't beat. What am I?", options: ["An Artichoke", "A Card", "A Clock", "A Computer"], correct: 0, part: "(data)", timeLimit: 60 },
+                        { id: 'c6r5', question: "I have a mouth but never eat. What am I?", options: ["A River", "A Cave", "A Jar", "A Bell"], correct: 0, part: ") {", timeLimit: 60 }
+                    ]
+                },
+                {
+                    id: 'code7',
+                    name: 'Encryption',
+                    order: 6,
+                    code: "      encryptData(data);",
+                    riddles: [
+                        { id: 'c7r1', question: "I have words but never speak. What am I?", options: ["A Book", "A Letter", "A Sign", "A Keyboard"], correct: 0, part: "      encryptData", timeLimit: 60 },
+                        { id: 'c7r2', question: "I run around the yard but never move. What am I?", options: ["A Fence", "A Dog", "A Path", "A Hose"], correct: 0, part: "(", timeLimit: 60 },
+                        { id: 'c7r3', question: "I have teeth but cannot bite. What am I?", options: ["A Comb", "A Saw", "A Gear", "A Zipper"], correct: 0, part: "data", timeLimit: 60 },
+                        { id: 'c7r4', question: "I am full of keys but cannot open any door. What am I?", options: ["A Piano", "A Map", "A Keyboard", "A Locker"], correct: 2, part: ")", timeLimit: 60 },
+                        { id: 'c7r5', question: "I have a ring but no finger. What am I?", options: ["A Phone", "A Tree", "A Bell", "A Circus"], correct: 0, part: ";", timeLimit: 60 }
+                    ]
+                },
+                {
+                    id: 'code8',
+                    name: 'Storage',
+                    order: 7,
+                    code: "      saveToDatabase(data);",
+                    riddles: [
+                        { id: 'c8r1', question: "I have a bank but no money. What am I?", options: ["A River", "A Cloud", "A Memory", "A Store"], correct: 0, part: "      saveToDatabase", timeLimit: 60 },
+                        { id: 'c8r2', question: "I have a spine but I am not a person. What am I?", options: ["A Book", "A Snake", "A Hedgehog", "A Cactus"], correct: 0, part: "(", timeLimit: 60 },
+                        { id: 'c8r3', question: "I can be cracked, made, told, and played. What am I?", options: ["A Joke", "A Code", "A Game", "An Egg"], correct: 0, part: "data", timeLimit: 60 },
+                        { id: 'c8r4', question: "I go through cities and fields but never move. What am I?", options: ["A Road", "A River", "A Wire", "A Shadow"], correct: 0, part: ")", timeLimit: 60 },
+                        { id: 'c8r5', question: "I have hands but cannot clap. What am I?", options: ["A Clock", "A Robot", "A Statue", "A Glove"], correct: 0, part: ";", timeLimit: 60 }
+                    ]
+                },
+                {
+                    id: 'code9',
+                    name: 'Response',
+                    order: 8,
+                    code: "      return successResponse();",
+                    riddles: [
+                        { id: 'c9r1', question: "I am always in front of you but cannot be seen. What am I?", options: ["Future", "Air", "Shadow", "Thought"], correct: 0, part: "      return", timeLimit: 60 },
+                        { id: 'c9r2', question: "I have a neck but no head. What am I?", options: ["A Bottle", "A Shirt", "A Guitar", "A River"], correct: 0, part: " successResponse", timeLimit: 60 },
+                        { id: 'c9r3', question: "I get smaller every time I take a bath. What am I?", options: ["A Bar of Soap", "A Towel", "A Sponge", "A Bucket"], correct: 0, part: "(", timeLimit: 60 },
+                        { id: 'c9r4', question: "I have a face but no eyes, hands but no arms. What am I?", options: ["A Clock", "A Coin", "A Dice", "A Mask"], correct: 0, part: ")", timeLimit: 60 },
+                        { id: 'c9r5', question: "I am not alive but I can grow. What am I?", options: ["A Crystal", "Fire", "A Cloud", "A Company"], correct: 0, part: ";", timeLimit: 60 }
+                    ]
+                },
+                {
+                    id: 'code10',
+                    name: 'Completion',
+                    order: 9,
+                    code: "  } else { handleError(); }",
+                    riddles: [
+                        { id: 'c10r1', question: "I am the beginning of the end. What am I?", options: ["The Letter E", "Death", "Time", "A Story"], correct: 0, part: "  }", timeLimit: 60 },
+                        { id: 'c10r2', question: "I am the end of every place. What am I?", options: ["The Letter E", "Death", "Time", "A Story"], correct: 0, part: " else", timeLimit: 60 },
+                        { id: 'c10r3', question: "I am the beginning of eternity. What am I?", options: ["The Letter E", "Death", "Time", "A Story"], correct: 0, part: " {", timeLimit: 60 },
+                        { id: 'c10r4', question: "I am the end of time and space. What am I?", options: ["The Letter E", "Death", "Time", "A Story"], correct: 0, part: " handleError", timeLimit: 60 },
+                        { id: 'c10r5', question: "I am the middle of the sea. What am I?", options: ["The Letter E", "Water", "An Island", "A Fish"], correct: 0, part: "(); }", timeLimit: 60 }
+                    ]
+                }
+            ],
+            settings: {
+                defaultRiddleTime: 60,
+                assemblyTime: 300,
+                enableGlobalTimer: true,
+                allowRestart: true
+            }
+        };
+
+        // STATE MANAGEMENT
+        let config = JSON.parse(JSON.stringify(defaultConfig));
+        let gameState = {
+            player: null,
+            currentSetIndex: 0,
+            currentRiddleIndex: 0,
+            completedSets: [],
+            currentParts: [],
+            startTime: null,
+            globalTimer: null,
+            riddleTimer: null,
+            timeLeft: 0,
+            isPlaying: false
+        };
+        let results = [];
+        let isAdmin = false;
+
+        // INITIALIZATION
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromStorage();
+            updatePreviewCounts();
+        });
+
+        // STORAGE
+        function saveToStorage() {
+            localStorage.setItem('codepuzzle_multicode_config', JSON.stringify(config));
+            localStorage.setItem('codepuzzle_multicode_results', JSON.stringify(results));
+        }
+
+        function loadFromStorage() {
+            const saved = localStorage.getItem('codepuzzle_multicode_config');
+            if (saved) config = JSON.parse(saved);
+            const savedResults = localStorage.getItem('codepuzzle_multicode_results');
+            if (savedResults) results = JSON.parse(savedResults);
+        }
+
+        // NAVIGATION
+        function showSection(section) {
+            ['landing', 'admin-login', 'admin', 'play'].forEach(s => {
+                document.getElementById(s + '-section').classList.add('hidden');
+            });
+            document.getElementById(section + '-section').classList.remove('hidden');
+            
+            if (section === 'admin') {
+                switchAdminTab('codesets');
+            } else if (section === 'play') {
+                updatePreviewCounts();
+            }
+        }
+
+        function updatePreviewCounts() {
+            const sortedSets = [...config.codeSets].sort((a, b) => a.order - b.order);
+            document.getElementById('preview-set-count').textContent = sortedSets.length;
+            const riddlesPerSet = sortedSets.length > 0 ? sortedSets[0].riddles.length : 0;
+            document.getElementById('preview-riddle-count').textContent = riddlesPerSet;
+            const totalRiddles = sortedSets.reduce((sum, set) => sum + set.riddles.length, 0);
+            document.getElementById('preview-total-riddles').textContent = totalRiddles;
+        }
+
+        // ADMIN AUTH
+        function showAdminLogin() {
+            showSection('admin-login');
+            document.getElementById('admin-password').value = '';
+            document.getElementById('login-error').classList.add('hidden');
+        }
+
+        function loginAdmin() {
+            const pass = document.getElementById('admin-password').value;
+            if (pass === config.adminPassword) {
+                isAdmin = true;
+                showSection('admin');
+                renderCodeSetsAdmin();
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        }
+
+        function logoutAdmin() {
+            isAdmin = false;
+            showSection('landing');
+        }
+
+        // ADMIN TABS
+        function switchAdminTab(tab) {
+            document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
+            document.getElementById('admin-' + tab).classList.remove('hidden');
+            
+            document.querySelectorAll('nav button').forEach(b => {
+                b.classList.remove('bg-white/10', 'text-cyan-400', 'border-l-2', 'border-cyan-400');
+                b.classList.add('text-gray-300');
+            });
+            
+            const activeBtn = document.getElementById('tab-' + tab);
+            activeBtn.classList.remove('text-gray-300');
+            activeBtn.classList.add('bg-white/10', 'text-cyan-400', 'border-l-2', 'border-cyan-400');
+            
+            if (tab === 'codesets') renderCodeSetsAdmin();
+            if (tab === 'preview') renderPreview();
+            if (tab === 'results') updateResultsTable();
+            if (tab === 'settings') loadSettingsUI();
+        }
+
+        // CODE SETS MANAGEMENT
+        function renderCodeSetsAdmin() {
+            const container = document.getElementById('codesets-container');
+            container.innerHTML = '';
+            
+            const sortedSets = [...config.codeSets].sort((a, b) => a.order - b.order);
+            
+            sortedSets.forEach((set, index) => {
+                const setDiv = document.createElement('div');
+                setDiv.className = 'code-set-card';
+                setDiv.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-600 flex items-center justify-center font-bold text-white">
+                                ${index + 1}
+                            </div>
+                            <div>
+                                <input type="text" value="${set.name}" 
+                                    onchange="updateSetName('${set.id}', this.value)"
+                                    class="bg-transparent border-b border-white/20 text-lg font-bold text-white focus:border-cyan-400 focus:outline-none px-0 py-1">
+                                <div class="text-xs text-gray-500 mt-1">ID: ${set.id}</div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="moveSet('${set.id}', -1)" class="p-2 text-gray-400 hover:text-white" ${index === 0 ? 'disabled style="opacity:0.3"' : ''}>
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <button onclick="moveSet('${set.id}', 1)" class="p-2 text-gray-400 hover:text-white" ${index === sortedSets.length - 1 ? 'disabled style="opacity:0.3"' : ''}>
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <button onclick="deleteSet('${set.id}')" class="p-2 text-red-400 hover:text-red-300">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4 p-3 rounded-lg bg-black/30 border border-white/10">
+                        <label class="text-xs text-gray-400 uppercase block mb-1">Complete Code (Final Answer)</label>
+                        <input type="text" value="${set.code}" 
+                            onchange="updateSetCode('${set.id}', this.value)"
+                            class="mono text-cyan-300 text-sm w-full bg-transparent border-b border-cyan-400/30 focus:border-cyan-400 focus:outline-none">
+                        <p class="text-xs text-gray-500 mt-1">This is the complete code participants will arrange</p>
+                    </div>
+                    
+                    <div class="border-t border-white/10 pt-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="text-sm font-bold text-gray-300">
+                                <i class="fas fa-puzzle-piece mr-1 text-purple-400"></i>
+                                Riddles & Code Parts (${set.riddles.length})
+                            </h4>
+                            <button onclick="addRiddleToSet('${set.id}')" class="text-xs px-3 py-1 rounded bg-purple-400/20 text-purple-400 hover:bg-purple-400/30 transition-all">
+                                <i class="fas fa-plus mr-1"></i> Add Riddle
+                            </button>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            ${set.riddles.map((riddle, rIndex) => `
+                                <div class="riddle-subcard">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div class="flex items-center gap-2">
+                                            <span class="part-badge">${rIndex + 1}</span>
+                                            <span class="text-xs text-purple-400 font-bold">PART ${rIndex + 1}</span>
+                                        </div>
+                                        <button onclick="deleteRiddle('${set.id}', '${riddle.id}')" class="text-xs text-red-400 hover:text-red-300">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="text-xs text-gray-500 block mb-1">Riddle Question</label>
+                                        <textarea class="w-full text-sm" rows="2" 
+                                            onchange="updateRiddle('${set.id}', '${riddle.id}', 'question', this.value)"
+                                            placeholder="Enter riddle question">${riddle.question}</textarea>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-2 gap-2 mb-3">
+                                        ${riddle.options.map((opt, oIndex) => `
+                                            <div class="flex items-center gap-2">
+                                                <input type="radio" name="correct-${set.id}-${riddle.id}" 
+                                                    ${riddle.correct === oIndex ? 'checked' : ''}
+                                                    onchange="setCorrectOption('${set.id}', '${riddle.id}', ${oIndex})"
+                                                    class="w-4 h-4 text-purple-400">
+                                                <input type="text" value="${opt}" class="flex-1 text-xs" 
+                                                    onchange="updateOption('${set.id}', '${riddle.id}', ${oIndex}, this.value)">
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="text-xs text-cyan-400 block mb-1">Code Part (Unlocked if correct)</label>
+                                            <input type="text" value="${riddle.part || ''}" class="w-full text-sm mono text-cyan-300"
+                                                onchange="updateRiddle('${set.id}', '${riddle.id}', 'part', this.value)"
+                                                placeholder="e.g., function">
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-gray-500 block mb-1">Time Limit (sec)</label>
+                                            <input type="number" value="${riddle.timeLimit || 60}" class="w-full text-sm"
+                                                onchange="updateRiddle('${set.id}', '${riddle.id}', 'timeLimit', parseInt(this.value))">
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(setDiv);
+            });
+        }
+
+        function addNewCodeSet() {
+            const newId = 'code' + (config.codeSets.length + 1) + '_' + Date.now();
+            const newSet = {
+                id: newId,
+                name: 'New Code Set ' + (config.codeSets.length + 1),
+                order: config.codeSets.length,
+                code: "// Complete code here",
+                riddles: [
+                    {
+                        id: 'r1_' + Date.now(),
+                        question: "Enter your riddle question...",
+                        options: ["Option 1", "Option 2", "Option 3", "Option 4"],
+                        correct: 0,
+                        part: "part1",
+                        timeLimit: config.settings.defaultRiddleTime || 60
+                    }
+                ]
+            };
+            config.codeSets.push(newSet);
+            saveToStorage();
+            renderCodeSetsAdmin();
+        }
+
+        function deleteSet(setId) {
+            if (config.codeSets.length <= 1) {
+                alert('Minimum 1 code set required');
+                return;
+            }
+            if (confirm('Delete this entire code set?')) {
+                config.codeSets = config.codeSets.filter(s => s.id !== setId);
+                config.codeSets.sort((a, b) => a.order - b.order);
+                config.codeSets.forEach((s, i) => s.order = i);
+                saveToStorage();
+                renderCodeSetsAdmin();
+            }
+        }
+
+        function moveSet(setId, direction) {
+            const set = config.codeSets.find(s => s.id === setId);
+            const currentOrder = set.order;
+            const newOrder = currentOrder + direction;
+            
+            if (newOrder < 0 || newOrder >= config.codeSets.length) return;
+            
+            const otherSet = config.codeSets.find(s => s.order === newOrder);
+            set.order = newOrder;
+            otherSet.order = currentOrder;
+            
+            saveToStorage();
+            renderCodeSetsAdmin();
+        }
+
+        function updateSetName(setId, value) {
+            const set = config.codeSets.find(s => s.id === setId);
+            set.name = value;
+            saveToStorage();
+        }
+
+        function updateSetCode(setId, value) {
+            const set = config.codeSets.find(s => s.id === setId);
+            set.code = value;
+            saveToStorage();
+        }
+
+        function addRiddleToSet(setId) {
+            const set = config.codeSets.find(s => s.id === setId);
+            const newRiddle = {
+                id: 'r' + (set.riddles.length + 1) + '_' + Date.now(),
+                question: "New riddle question...",
+                options: ["A", "B", "C", "D"],
+                correct: 0,
+                part: "newPart",
+                timeLimit: config.settings.defaultRiddleTime || 60
+            };
+            set.riddles.push(newRiddle);
+            saveToStorage();
+            renderCodeSetsAdmin();
+        }
+
+        function deleteRiddle(setId, riddleId) {
+            const set = config.codeSets.find(s => s.id === setId);
+            if (set.riddles.length <= 1) {
+                alert('Each code set must have at least 1 riddle');
+                return;
+            }
+            set.riddles = set.riddles.filter(r => r.id !== riddleId);
+            saveToStorage();
+            renderCodeSetsAdmin();
+        }
+
+        function updateRiddle(setId, riddleId, field, value) {
+            const set = config.codeSets.find(s => s.id === setId);
+            const riddle = set.riddles.find(r => r.id === riddleId);
+            riddle[field] = value;
+            saveToStorage();
+        }
+
+        function updateOption(setId, riddleId, optionIndex, value) {
+            const set = config.codeSets.find(s => s.id === setId);
+            const riddle = set.riddles.find(r => r.id === riddleId);
+            riddle.options[optionIndex] = value;
+            saveToStorage();
+        }
+
+        function setCorrectOption(setId, riddleId, optionIndex) {
+            const set = config.codeSets.find(s => s.id === setId);
+            const riddle = set.riddles.find(r => r.id === riddleId);
+            riddle.correct = optionIndex;
+            saveToStorage();
+        }
+
+        // PASSWORD MANAGEMENT
+        function changePassword() {
+            const current = document.getElementById('current-password').value;
+            const newPass = document.getElementById('new-password').value;
+            const confirm = document.getElementById('confirm-password').value;
+            const msgDiv = document.getElementById('password-message');
+            
+            if (current !== config.adminPassword) {
+                showPasswordMessage('Current password is incorrect', 'error');
+                return;
+            }
+            
+            if (newPass.length < 4) {
+                showPasswordMessage('Password must be at least 4 characters', 'error');
+                return;
+            }
+            
+            if (newPass !== confirm) {
+                showPasswordMessage('New passwords do not match', 'error');
+                return;
+            }
+            
+            config.adminPassword = newPass;
+            saveToStorage();
+            
+            showPasswordMessage('Password updated successfully!', 'success');
+            document.getElementById('current-password').value = '';
+            document.getElementById('new-password').value = '';
+            document.getElementById('confirm-password').value = '';
+        }
+
+        function showPasswordMessage(text, type) {
+            const msgDiv = document.getElementById('password-message');
+            msgDiv.textContent = text;
+            msgDiv.className = `mt-4 p-3 rounded-lg text-sm text-center ${type === 'error' ? 'bg-red-500/10 border border-red-500/30 text-red-400' : 'bg-green-500/10 border border-green-500/30 text-green-400'}`;
+            msgDiv.classList.remove('hidden');
+        }
+
+        // SETTINGS
+        function loadSettingsUI() {
+            document.getElementById('default-riddle-time').value = config.settings.defaultRiddleTime;
+            document.getElementById('time-assembly').value = config.settings.assemblyTime;
+            document.getElementById('enable-global-timer').checked = config.settings.enableGlobalTimer;
+            document.getElementById('allow-restart').checked = config.settings.allowRestart;
+        }
+
+        function saveGlobalSettings() {
+            config.settings.defaultRiddleTime = parseInt(document.getElementById('default-riddle-time').value) || 60;
+            config.settings.assemblyTime = parseInt(document.getElementById('time-assembly').value) || 300;
+            config.settings.enableGlobalTimer = document.getElementById('enable-global-timer').checked;
+            config.settings.allowRestart = document.getElementById('allow-restart').checked;
+            saveToStorage();
+            alert('Settings saved!');
+        }
+
+        // PREVIEW & RESULTS
+        function renderPreview() {
+            const sortedSets = [...config.codeSets].sort((a, b) => a.order - b.order);
+            const container = document.getElementById('preview-container');
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <p class="text-gray-400 mb-4">Configured: ${sortedSets.length} Codes</p>
+                    <div class="flex justify-center gap-2 mb-4 flex-wrap">
+                        ${sortedSets.map((set, i) => `
+                            <div class="w-12 h-12 rounded-full bg-purple-400/20 border border-purple-400/50 flex items-center justify-center text-purple-400 font-bold text-xs" title="${set.name}">
+                                C${i + 1}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <p class="text-xs text-gray-500 mb-4">Each code requires ${sortedSets[0]?.riddles.length || 0} riddles to unlock</p>
+                    <div class="max-w-md mx-auto text-left space-y-2">
+                        ${sortedSets.slice(0, 2).map(set => `
+                            <div class="p-2 rounded bg-white/5 text-xs">
+                                <span class="text-cyan-400">${set.name}:</span>
+                                <span class="text-gray-400">${set.riddles.length} parts → 1 code</span>
+                            </div>
+                        `).join('')}
+                        ${sortedSets.length > 2 ? `<div class="text-xs text-gray-500 text-center">... and ${sortedSets.length - 2} more codes</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateResultsTable() {
+            const tbody = document.getElementById('results-table');
+            const noResults = document.getElementById('no-results');
+            
+            if (results.length === 0) {
+                tbody.innerHTML = '';
+                noResults.classList.remove('hidden');
+                return;
+            }
+            
+            noResults.classList.add('hidden');
+            tbody.innerHTML = results.sort((a, b) => {
+                if (a.completed !== b.completed) return b.completed - a.completed;
+                return a.time.localeCompare(b.time);
+            }).map((r, i) => `
+                <tr class="hover:bg-white/5 transition-colors">
+                    <td class="px-6 py-4 font-bold ${r.completed ? 'text-cyan-400' : 'text-gray-500'}">#${i + 1}</td>
+                    <td class="px-6 py-4">
+                        <div class="font-medium text-white">${r.name}</div>
+                    </td>
+                    <td class="px-6 py-4">${r.codesCompleted || 0}/${config.codeSets.length}</td>
+                    <td class="px-6 py-4 mono">${r.time}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 rounded text-xs ${r.completed ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">
+                            ${r.completed ? 'Completed' : 'Failed'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function exportResults() {
+            if (results.length === 0) {
+                alert('No results to export');
+                return;
+            }
+            
+            const csv = [
+                ['Rank', 'Name', 'Codes Completed', 'Total Time', 'Status', 'Date'].join(','),
+                ...results.map((r, i) => [
+                    i + 1,
+                    r.name,
+                    `${r.codesCompleted || 0}/${config.codeSets.length}`,
+                    r.time,
+                    r.completed ? 'Completed' : 'Failed',
+                    new Date(r.timestamp).toISOString()
+                ].join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `code-puzzle-results-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        }
+
+        // GAME LOGIC
+        function registerPlayer() {
+            const name = document.getElementById('participant-name').value.trim();
+            const email = document.getElementById('participant-email').value.trim();
+            
+            if (!name) {
+                document.getElementById('participant-name').classList.add('animate-shake');
+                setTimeout(() => document.getElementById('participant-name').classList.remove('animate-shake'), 500);
+                return;
+            }
+            
+            gameState.player = { name, email, id: Date.now() };
+            gameState.currentSetIndex = 0;
+            gameState.currentRiddleIndex = 0;
+            gameState.completedSets = [];
+            gameState.currentParts = [];
+            gameState.isPlaying = true;
+            gameState.startTime = Date.now();
+            
+            document.getElementById('player-registration').classList.add('hidden');
+            document.getElementById('game-interface').classList.remove('hidden');
+            
+            renderSetIndicators();
+            startGlobalTimer();
+            loadSet(0);
+        }
+
+        function renderSetIndicators() {
+            const sortedSets = [...config.codeSets].sort((a, b) => a.order - b.order);
+            const container = document.getElementById('sets-indicators');
+            
+            container.innerHTML = sortedSets.map((set, i) => {
+                let statusClass = 'set-pending';
+                let icon = `<span class="text-xs">${i + 1}</span>`;
+                
+                if (i < gameState.currentSetIndex) {
+                    statusClass = 'set-completed';
+                    icon = '<i class="fas fa-check text-sm"></i>';
+                } else if (i === gameState.currentSetIndex) {
+                    statusClass = 'set-current';
+                    icon = `<span class="text-sm">${i + 1}</span>`;
+                }
+                
+                return `
+                    <div class="set-indicator ${statusClass}" title="${set.name}">
+                        ${icon}
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('sets-progress').textContent = `${gameState.completedSets.length}/${sortedSets.length}`;
+        }
+
+        function startGlobalTimer() {
+            if (!config.settings.enableGlobalTimer) {
+                document.getElementById('game-timer-bar').style.display = 'none';
+                return;
+            }
+            
+            let totalTime = config.codeSets.reduce((sum, set) => 
+                sum + set.riddles.reduce((s, r) => s + (r.timeLimit || 60), 0), 0) + config.settings.assemblyTime;
+            
+            gameState.timeLeft = totalTime;
+            
+            gameState.globalTimer = setInterval(() => {
+                gameState.timeLeft--;
+                
+                const mins = Math.floor(gameState.timeLeft / 60).toString().padStart(2, '0');
+                const secs = (gameState.timeLeft % 60).toString().padStart(2, '0');
+                document.getElementById('game-timer-display').textContent = `${mins}:${secs}`;
+                
+                const totalOriginal = config.codeSets.reduce((sum, set) => 
+                    sum + set.riddles.reduce((s, r) => s + (r.timeLimit || 60), 0), 0) + config.settings.assemblyTime;
+                const pct = (gameState.timeLeft / totalOriginal) * 100;
+                document.getElementById('game-timer-bar').style.width = pct + '%';
+                
+                if (gameState.timeLeft <= 0) {
+                    endGame(false, "Time's up!");
+                }
+            }, 1000);
+        }
+
+        function loadSet(index) {
+            const sortedSets = [...config.codeSets].sort((a, b) => a.order - b.order);
+            
+            if (index >= sortedSets.length) {
+                showFinalAssembly();
+                return;
+            }
+            
+            gameState.currentSetIndex = index;
+            gameState.currentRiddleIndex = 0;
+            gameState.currentParts = [];
+            
+            document.getElementById('current-set-gameplay').classList.remove('hidden');
+            document.getElementById('final-assembly').classList.add('hidden');
+            
+            renderSetIndicators();
+            loadRiddle(0);
+        }
+
+        function loadRiddle(riddleIndex) {
+            const sortedSets = [...config.codeSets].sort((a, b) => a.order - b.order);
+            const currentSet = sortedSets[gameState.currentSetIndex];
+            
+            if (riddleIndex >= currentSet.riddles.length) {
+                completeSet();
+                return;
+            }
+            
+            const riddle = currentSet.riddles[riddleIndex];
+            gameState.currentRiddleIndex = riddleIndex;
+            
+            document.getElementById('current-set-info').textContent = `CODE ${gameState.currentSetIndex + 1}: ${currentSet.name}`;
+            document.getElementById('riddle-progress').textContent = `Part ${riddleIndex + 1}/${currentSet.riddles.length}`;
+            document.getElementById('game-question').textContent = riddle.question;
+            document.getElementById('game-feedback').classList.add('hidden');
+            
+            const shuffled = riddle.options.map((opt, i) => ({ opt, original: i })).sort(() => Math.random() - 0.5);
+            
+            document.getElementById('game-options').innerHTML = shuffled.map(({ opt, original }) => `
+                <button onclick="submitAnswer(${original})" class="w-full text-left p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-cyan-400/50 transition-all group flex items-center justify-between">
+                    <span>${opt}</span>
+                    <i class="fas fa-chevron-right opacity-0 group-hover:opacity-100 text-cyan-400"></i>
+                </button>
+            `).join('');
+            
+            if (config.settings.enableGlobalTimer && riddle.timeLimit) {
+                startRiddleTimer(riddle.timeLimit);
+            }
+        }
+
+        function startRiddleTimer(seconds) {
+            if (gameState.riddleTimer) clearInterval(gameState.riddleTimer);
+            
+            let timeLeft = seconds;
+            const display = document.getElementById('set-timer');
+            
+            gameState.riddleTimer = setInterval(() => {
+                timeLeft--;
+                display.innerHTML = `Time: <span class="${timeLeft < 10 ? 'text-red-400' : 'text-yellow-400'}">${timeLeft}s</span>`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(gameState.riddleTimer);
+                    handleWrongAnswer();
+                }
+            }, 1000);
+        }
+
+        function submitAnswer(selectedIndex) {
+            if (gameState.riddleTimer) clearInterval(gameState.riddleTimer);
+            
+            const sortedSets = [...config.codeSets].sort((a, b) => a.order - b.order);
+            const currentSet = sortedSets[gameState.currentSetIndex];
+            const riddle = currentSet.riddles[gameState.currentRiddleIndex];
+            
+            if (selectedIndex === riddle.correct) {
+                handleCorrectAnswer(riddle.part);
+            } else {
+                handleWrongAnswer();
+            }
+        }
+
+        function handleCorrectAnswer(part) {
+            gameState.currentParts.push({
+                index: gameState.currentRiddleIndex,
+                part: part
+            });
+            
+            updateCurrentParts();
+            
+            const feedback = document.getElementById('game-feedback');
+            feedback.className = 'mt-4 p-4 rounded-lg bg-green-500/10 border border-green-500/30 text-green-400';
+            feedback.innerHTML = `<i class="fas fa-check-circle mr-2"></i> Correct! Part unlocked: <code class="ml-2 text-cyan-300">${part}</code>`;
+            feedback.classList.remove('hidden');
+            
+            setTimeout(() => {
+                loadRiddle(gameState.currentRiddleIndex + 1);
+            }, 1500);
+        }
+
+        function handleWrongAnswer() {
+            if (!config.settings.allowRestart) {
+                endGame(false, "Wrong answer! Game Over.");
+                return;
+            }
+            
+            const feedback = document.getElementById('game-feedback');
+            feedback.className = 'mt-4 p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 animate-shake';
+            feedback.innerHTML = `<i class="fas fa-exclamation-triangle mr-2"></i> Wrong! Restarting this code...`;
+            feedback.classList.remove('hidden');
+            
+            setTimeout(() => {
+                gameState.currentRiddleIndex = 0;
+                gameState.currentParts = [];
+                updateCurrentParts();
+                loadRiddle(0);
+            }, 2000);
+        }
+
+        function updateCurrentParts() {
+            const sortedSets = [...config.codeSets].sort((a, b) => a.order - b.order);
+            const currentSet = sortedSets[gameState.currentSetIndex];
+            const container = document.getElementById('current-parts');
+            
+            if (gameState.currentParts.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm w-full text-center py-4">Complete riddles to collect code parts</p>';
+                document.getElementById('parts-count').textContent = `0/${currentSet.riddles.length} parts`;
+                document.getElementById('parts-progress').style.width = '0%';
+                return;
+            }
+            
+            container.innerHTML = gameState.currentParts.map((p, i) => `
+                <div class="fragment-part">
+                    <span class="part-badge">${i + 1}</span>
+                    <code class="text-cyan-300 text-sm mono">${p.part}</code>
+                </div>
+            `).join('');
+            
+            const progress = (gameState.currentParts.length / currentSet.riddles.length) * 100;
+            document.getElementById('parts-count').textContent = `${gameState.currentParts.length}/${currentSet.riddles.length} parts`;
+            document.getElementById('parts-progress').style.width = `${progress}%`;
+        }
+
+        function completeSet() {
+            const sortedSets = [...config.codeSets].sort((a, b) => a.order - b.order);
+            const currentSet = sortedSets[gameState.currentSetIndex];
+            
+            gameState.completedSets.push({
+                setId: currentSet.id,
+                name: currentSet.name,
+                code: currentSet.code,
+                order: currentSet.order
+            });
+            
+            document.getElementById('completed-sets-container').classList.remove('hidden');
+            document.getElementById('completed-codes-list').innerHTML = gameState.completedSets.map((s, i) => `
+                <div class="p-3 rounded-lg bg-green-400/10 border border-green-400/30 flex items-center justify-between">
+                    <div>
+                        <div class="text-xs text-green-400 mb-1">CODE ${i + 1}: ${s.name}</div>
+                        <code class="text-cyan-300 mono text-sm">${s.code}</code>
+                    </div>
+                    <i class="fas fa-check-circle text-green-400"></i>
+                </div>
+            `).join('');
+            
+            const feedback = document.getElementById('game-feedback');
+            feedback.className = 'mt-4 p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400';
+            feedback.innerHTML = `<i class="fas fa-unlock mr-2"></i> Code ${gameState.currentSetIndex + 1} Complete!`;
+            feedback.classList.remove('hidden');
+            
+            setTimeout(() => {
+                loadSet(gameState.currentSetIndex + 1);
+            }, 2000);
+        }
+
+        function showFinalAssembly() {
+            document.getElementById('current-set-gameplay').classList.add('hidden');
+            document.getElementById('final-assembly').classList.remove('hidden');
+            
+            const container = document.getElementById('final-assembly-pieces');
+            container.innerHTML = '';
+            
+            const shuffled = [...gameState.completedSets].sort(() => Math.random() - 0.5);
+            
+            shuffled.forEach((set, i) => {
+                const div = document.createElement('div');
+                div.className = 'assembly-item p-4 rounded-lg bg-white/5 border border-white/20 cursor-move hover:bg-white/10 transition-all';
+                div.draggable = true;
+                div.dataset.originalOrder = set.order;
+                div.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <i class="fas fa-grip-vertical text-gray-500"></i>
+                        <div class="flex-1">
+                            <div class="text-xs text-gray-400 mb-1">Code ${set.order + 1}: ${set.name}</div>
+                            <code class="mono text-cyan-300 text-lg block">${set.code}</code>
+                        </div>
+                    </div>
+                `;
+                
+                div.addEventListener('dragstart', handleDragStart);
+                div.addEventListener('dragover', handleDragOver);
+                div.addEventListener('drop', handleDrop);
+                div.addEventListener('dragend', handleDragEnd);
+                
+                container.appendChild(div);
+            });
+        }
+
+        let draggedElement = null;
+
+        function handleDragStart(e) {
+            draggedElement = this;
+            this.style.opacity = '0.5';
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) e.preventDefault();
+            return false;
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) e.stopPropagation();
+            if (draggedElement !== this) {
+                const container = document.getElementById('final-assembly-pieces');
+                const all = [...container.children];
+                const draggedIdx = all.indexOf(draggedElement);
+                const droppedIdx = all.indexOf(this);
+                
+                if (draggedIdx < droppedIdx) {
+                    this.parentNode.insertBefore(draggedElement, this.nextSibling);
+                } else {
+                    this.parentNode.insertBefore(draggedElement, this);
+                }
+            }
+            return false;
+        }
+
+        function handleDragEnd() {
+            this.style.opacity = '1';
+            draggedElement = null;
+        }
+
+        function checkFinalAssembly() {
+            const container = document.getElementById('final-assembly-pieces');
+            const items = [...container.children];
+            const currentOrder = items.map(item => parseInt(item.dataset.originalOrder));
+            
+            const isCorrect = currentOrder.every((val, idx) => val === idx);
+            
+            if (isCorrect) {
+                endGame(true);
+            } else {
+                const error = document.getElementById('final-error');
+                error.textContent = 'Incorrect sequence! Arrange codes in the correct order (1, 2, 3...).';
+                error.classList.remove('hidden');
+                setTimeout(() => error.classList.add('hidden'), 3000);
+            }
+        }
+
+        function endGame(completed, reason) {
+            if (gameState.globalTimer) clearInterval(gameState.globalTimer);
+            if (gameState.riddleTimer) clearInterval(gameState.riddleTimer);
+            
+            gameState.isPlaying = false;
+            
+            const time = getElapsedTime();
+            const result = {
+                name: gameState.player.name,
+                email: gameState.player.email,
+                time: time,
+                codesCompleted: gameState.completedSets.length,
+                completed: completed,
+                timestamp: Date.now()
+            };
+            
+            results.push(result);
+            saveToStorage();
+            
+            document.getElementById('final-assembly').classList.add('hidden');
+            document.getElementById('current-set-gameplay').classList.add('hidden');
+            document.getElementById('game-result').classList.remove('hidden');
+            
+            if (completed) {
+                document.getElementById('victory-content').classList.remove('hidden');
+                document.getElementById('defeat-content').classList.add('hidden');
+                document.getElementById('winner-name-display').textContent = gameState.player.name;
+                document.getElementById('final-time').textContent = time;
+                document.getElementById('final-codes').textContent = gameState.completedSets.length;
+                
+                const rank = results.filter(r => r.completed).length;
+                document.getElementById('final-rank').textContent = `#${rank}`;
+                
+                createConfetti();
+            } else {
+                document.getElementById('victory-content').classList.add('hidden');
+                document.getElementById('defeat-content').classList.remove('hidden');
+                document.getElementById('defeat-reason').textContent = reason || "Challenge failed!";
+            }
+        }
+
+        function getElapsedTime() {
+            const elapsed = Math.floor((Date.now() - gameState.startTime) / 1000);
+            const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const secs = (elapsed % 60).toString().padStart(2, '0');
+            return `${mins}:${secs}`;
+        }
+
+        function createConfetti() {
+            const colors = ['#00f0ff', '#7000ff', '#ff006e', '#ffd700'];
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                    document.body.appendChild(confetti);
+                    setTimeout(() => confetti.remove(), 4000);
+                }, i * 50);
+            }
+        }
+
+        window.addEventListener('beforeunload', (e) => {
+            if (gameState.isPlaying) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    </script>
+</body>
+</html>
