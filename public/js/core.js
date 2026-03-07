@@ -111,13 +111,13 @@ const PROGRAMS_DATA = [
     ]
   },
   {
-    name: 'Prime Number Checker (Java)',
+    name: 'Prime Numbers (Java)',
     correctOrder: [
-      'import java.util.Scanner;',
-      'public class PrimeCheck {',
-      'static boolean isPrime(int n) { if(n<=1) return false; for(int i=2; i<=Math.sqrt(n); i++) if(n%i==0) return false; return true; }',
-      'Scanner sc = new Scanner(System.in); int num = sc.nextInt();',
-      'System.out.println(num + (isPrime(num) ? " is Prime" : " is not Prime")); sc.close();'
+      'public class PrimeNumbers {',
+      'int i, j, n = 20, flag;',
+      'for(i = 2; i <= n; i++) { flag = 0;',
+      'for(j = 2; j <= i / 2; j++) { if(i % j == 0) { flag = 1; break; } }',
+      'if(flag == 0) System.out.print(i + " "); }'
     ],
     questions: [
       [
