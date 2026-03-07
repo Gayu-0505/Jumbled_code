@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rabbit Coders — Admin Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --purple: #7c3aed; --purple-light: #a78bfa; --pink: #ec4899;
+            --yellow: #facc15; --green: #22c55e; --red: #ef4444;
+            --orange: #f97316; --bg: #faf5ff; --card-bg: #ffffff;
+            --text: #1e1b4b; --text-muted: #6b7280; --border: #e9d5ff;
+        }
+        body {
+            font-family: 'Nunito', 'Segoe UI', sans-serif;
+            background: var(--bg);
+            background-image:
+                radial-gradient(circle at 15% 20%, rgba(124,58,237,.08) 0%, transparent 50%),
+                radial-gradient(circle at 85% 80%, rgba(236,72,153,.08) 0%, transparent 50%);
+            color: var(--text);
+            min-height: 100vh;
+            text-align: center;
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            max-width: 750px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(124,58,237,.10);
+            border: 2px solid var(--border);
+            padding: 32px 24px;
+        }
+        h1 { font-size: 1.6rem; font-weight: 900; margin-bottom: 4px; }
+        .subtitle { color: var(--text-muted); font-size: .9rem; margin-bottom: 20px; }
+
+        /* Controls bar */
+        .controls {
+            display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            border: none; border-radius: 14px; padding: 12px 28px;
+            font-size: .95rem; font-weight: 700; cursor: pointer;
+            font-family: 'Nunito', sans-serif; transition: transform .2s, box-shadow .2s;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+        .btn:active { transform: translateY(0); }
+        .btn-start { background: linear-gradient(135deg, var(--green), #16a34a); color: #fff; }
+        .btn-stop { background: linear-gradient(135deg, var(--red), #dc2626); color: #fff; }
+        .btn-reset { background: linear-gradient(135deg, var(--orange), #ea580c); color: #fff; }
+        .btn-logout { background: #f3e8ff; color: var(--purple); font-size: .85rem; padding: 10px 20px; }
+
+        .status-bar {
+            display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;
+            margin-bottom: 20px; font-size: .85rem;
+        }
+        .status-bar span {
+            background: linear-gradient(135deg, #ede9fe, #fce7f3);
+            padding: 6px 14px; border-radius: 10px; font-weight: 700;
+            border: 1.5px solid var(--border);
+        }
+        .status-bar .live { background: linear-gradient(135deg, #dcfce7, #d1fae5); border-color: var(--green); color: #166534; }
+        .status-bar .stopped { background: linear-gradient(135deg, #fef2f2, #fee2e2); border-color: var(--red); color: #991b1b; }
+
+        table {
+            width: 100%; border-collapse: collapse; margin-top: 12px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        thead th {
+            background: linear-gradient(135deg, #7c3aed, #ec4899);
+            color: white; padding: 12px 8px; font-size: .75rem;
+            text-transform: uppercase; letter-spacing: .06em;
+        }
+        thead th:first-child { border-radius: 12px 0 0 0; }
+        thead th:last-child { border-radius: 0 12px 0 0; }
+        tbody td {
+            padding: 10px 8px; border-bottom: 1px solid var(--border);
+            font-size: .9rem;
+        }
+        tbody tr:hover { background: #faf5ff; }
+        .rank-1 { font-weight: 900; font-size: 1.2rem; }
+        .rank-2 { font-weight: 800; font-size: 1.1rem; }
+        .rank-3 { font-weight: 700; font-size: 1.05rem; }
+        .timer { font-family: 'JetBrains Mono', monospace; color: var(--purple); font-weight: 700; }
+        .empty { color: var(--text-muted); padding: 40px 0; font-size: 1rem; }
+        .error { color: var(--red); font-weight: 600; }
+        .refresh-info { color: var(--text-muted); font-size: .75rem; margin-top: 16px; }
+
+        /* Login card */
+        .login-card {
+            max-width: 400px; margin: 0 auto;
+            background: var(--card-bg); border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(124,58,237,.10);
+            border: 2px solid var(--border); padding: 40px 32px;
+        }
+        .login-card input {
+            width: 100%; padding: 12px 16px; background: #faf5ff;
+            border: 2px solid var(--border); border-radius: 12px;
+            font-size: 1rem; color: var(--text); font-family: 'Nunito', sans-serif;
+            font-weight: 600; text-align: center; margin-bottom: 12px;
+        }
+        .login-card input::placeholder { color: #a78bfa; font-weight: 500; }
+        .login-card input:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 4px rgba(124,58,237,.12); }
+        .login-card .btn-login {
+            width: 100%; background: linear-gradient(135deg, var(--purple), var(--pink));
+            color: #fff; border: none; border-radius: 14px; padding: 14px;
+            font-size: 1rem; font-weight: 700; cursor: pointer;
+            font-family: 'Nunito', sans-serif; margin-top: 8px;
+        }
+        .login-card label {
+            font-size: .8rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .06em; color: #a78bfa; display: block; margin-bottom: 6px; text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-card">
+        <img src="/logo.jpg" alt="Rabbit Coders" style="height:80px;border-radius:12px;margin-bottom:12px">
+        <h1 style="font-size:1.4rem;margin-bottom:16px">Admin Login</h1>
+        <form id="login-form">
+            <label>Username</label>
+            <input type="text" id="login-user" placeholder="Admin username" required autocomplete="off" />
+            <label>Password</label>
+            <input type="password" id="login-pass" placeholder="Password" required autocomplete="off" />
+            <div id="login-error" style="min-height:24px"></div>
+            <button type="submit" class="btn-login">🔐 Login</button>
+        </form>
+        <p style="margin-top:16px"><a href="/" style="color:var(--purple);font-size:.85rem">← Back to Game</a></p>
+    </div>
+
+    <!-- Dashboard (hidden initially) -->
+    <div id="dashboard" style="display:none">
+        <div class="container">
+            <img src="/logo.jpg" alt="Rabbit Coders" style="height:70px;border-radius:12px;margin-bottom:8px">
+            <h1>Rabbit Coders — Admin Dashboard</h1>
+            <p class="subtitle">Live leaderboard — auto-refreshes every 5 seconds</p>
+
+            <div class="controls">
+                <button class="btn btn-start" id="btn-start" onclick="startGame()">▶ Start Game</button>
+                <button class="btn btn-stop" id="btn-stop" onclick="stopGame()">⏹ Stop Game</button>
+                <button class="btn btn-reset" onclick="resetDashboard()">🗑 Reset</button>
+                <button class="btn btn-logout" onclick="logout()">🚪 Logout</button>
+            </div>
+
+            <div class="status-bar">
+                <span id="game-status" class="stopped">● Game Stopped</span>
+                <span id="count-badge">0 entries</span>
+                <span id="last-update">Updated: --:--:--</span>
+            </div>
+
+            <div id="lb-content"><p class="empty">Loading...</p></div>
+            <p class="refresh-info">Auto-refresh: every 5s</p>
+        </div>
+    </div>
+
+    <script src="/config.js"></script>
+    <script>
+        const SUPABASE_URL = window.__SUPABASE_URL__ || '';
+        const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || '';
+        let sb = null;
+        try {
+            if (window.supabase && window.supabase.createClient && SUPABASE_URL) {
+                sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        } catch (e) { console.warn('Supabase init failed:', e); }
+
+        let adminCreds = null;
+
+        function esc(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+        function fmtTime(secs) {
+            const m = Math.floor(secs / 60).toString().padStart(2, '0');
+            const s = (secs % 60).toString().padStart(2, '0');
+            return m + ':' + s;
+        }
+
+        // ─── Login ──────────────────────────────────────
+        function initLogin() {
+            try {
+                const stored = sessionStorage.getItem('jc_admin');
+                if (stored) {
+                    adminCreds = JSON.parse(stored);
+                    showDashboard();
+                    return;
+                }
+            } catch(e) {}
+            document.getElementById('login-screen').style.display = '';
+        }
+
+        document.getElementById('login-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('login-user').value.trim();
+            const password = document.getElementById('login-pass').value.trim();
+            document.getElementById('login-error').innerHTML = '';
+            try {
+                const res = await fetch('/api/admin-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    adminCreds = { username, password };
+                    sessionStorage.setItem('jc_admin', JSON.stringify(adminCreds));
+                    showDashboard();
+                } else {
+                    document.getElementById('login-error').innerHTML = '<p class="error">Invalid credentials.</p>';
+                }
+            } catch (err) {
+                document.getElementById('login-error').innerHTML = '<p class="error">Connection error.</p>';
+            }
+        };
+
+        function showDashboard() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('dashboard').style.display = '';
+            fetchGameStatus();
+            fetchLeaderboard();
+            setInterval(fetchLeaderboard, 5000);
+            setInterval(fetchGameStatus, 3000);
+        }
+
+        function logout() {
+            sessionStorage.removeItem('jc_admin');
+            adminCreds = null;
+            window.location.href = '/';
+        }
+
+        // ─── Game Controls ──────────────────────────────
+        async function startGame() {
+            try {
+                await fetch('/api/game-start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(adminCreds)
+                });
+                fetchGameStatus();
+            } catch(e) {}
+        }
+
+        async function stopGame() {
+            try {
+                await fetch('/api/game-stop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(adminCreds)
+                });
+                fetchGameStatus();
+            } catch(e) {}
+        }
+
+        async function fetchGameStatus() {
+            try {
+                const res = await fetch('/api/game-status');
+                const data = await res.json();
+                const el = document.getElementById('game-status');
+                if (data.started) {
+                    el.textContent = '● Game Running';
+                    el.className = 'live';
+                } else {
+                    el.textContent = '● Game Stopped';
+                    el.className = 'stopped';
+                }
+            } catch(e) {}
+        }
+
+        // ─── Reset Dashboard ─────────────────────────────
+        async function resetDashboard() {
+            if (!confirm('Are you sure? This will delete ALL leaderboard entries and stop the game.')) return;
+            try {
+                const res = await fetch('/api/reset-leaderboard', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(adminCreds)
+                });
+                const data = await res.json();
+                if (!data.ok) {
+                    alert('Reset failed: ' + (data.error || 'Unknown error'));
+                    return;
+                }
+                await fetchGameStatus();
+                await fetchLeaderboard();
+            } catch(e) {
+                console.error('Reset error:', e);
+                alert('Reset failed: ' + e.message);
+            }
+        }
+
+        // ─── Leaderboard ────────────────────────────────
+        async function fetchLeaderboard() {
+            const lbContent = document.getElementById('lb-content');
+            const countBadge = document.getElementById('count-badge');
+            const lastUpdate = document.getElementById('last-update');
+
+            if (!sb) {
+                lbContent.innerHTML = '<p class="error">No database connection. Set SUPABASE_URL and SUPABASE_ANON_KEY in .env</p>';
+                return;
+            }
+
+            try {
+                const { data, error } = await sb
+                    .from('leaderboard')
+                    .select('*')
+                    .eq('programs_completed', 3)
+                    .order('time_seconds', { ascending: true })
+                    .limit(50);
+
+                if (error) throw error;
+
+                const now = new Date();
+                lastUpdate.textContent = 'Updated: ' + now.toLocaleTimeString();
+
+                if (!data || data.length === 0) {
+                    lbContent.innerHTML = '<p class="empty">No entries yet. Waiting for participants... 🎮</p>';
+                    countBadge.textContent = '0 entries';
+                    return;
+                }
+
+                countBadge.textContent = data.length + ' entries';
+                lbContent.innerHTML = `
+                    <table>
+                        <thead><tr><th>#</th><th>Team Name</th><th>Time</th></tr></thead>
+                        <tbody>
+                            ${data.map((row, i) => `<tr>
+                                <td class="${i < 3 ? 'rank-' + (i+1) : ''}">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</td>
+                                <td>${esc(row.name)}</td>
+                                <td class="timer">${fmtTime(row.time_seconds)}</td>
+                            </tr>`).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (e) {
+                console.error(e);
+                lbContent.innerHTML = '<p class="error">Could not load leaderboard.</p>';
+            }
+        }
+
+        // Init
+        initLogin();
+    </script>
+</body>
+</html>

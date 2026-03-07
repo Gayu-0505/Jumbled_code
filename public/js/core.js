@@ -1,6 +1,6 @@
-// Supabase config
-const SUPABASE_URL = 'https://qmwkfermfdswpivjzdad.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtd2tmZXJtZmRzd3Bpdmp6ZGFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MDM5NDUsImV4cCI6MjA4ODM3OTk0NX0.dPBrztJy6HKVZBJOZEslvijFlvbx9PTuFUdOiuwDlN4';
+// Supabase config — set these in a <script> tag or env config before loading this file
+const SUPABASE_URL = window.__SUPABASE_URL__ || '';
+const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || '';
 let sb = null;
 try {
   if (window.supabase && window.supabase.createClient) {
@@ -9,8 +9,6 @@ try {
 } catch (e) { console.warn('Supabase init failed:', e); }
 
 const app = document.getElementById('app');
-const timerEl = document.getElementById('live-timer');
-let timerInterval = null;
 
 // State
 let participant = null;
@@ -22,117 +20,131 @@ let answers = [];
 let codeBlocks = [];
 let arrangedPrograms = 0;
 let jumbledLines = [];
+let gamePhase = 'entry'; // 'entry' | 'waiting' | 'questions' | 'unlocked' | 'arrange' | 'intermediate' | 'finished'
 
-// 3 programs, each with 5 code blocks and 3 questions per block
+// ─── State Persistence ──────────────────────────────────
+function saveState() {
+  const state = {
+    participant, startTime, unlockedBlocks, currentQuestion,
+    currentBlock, answers, codeBlocks, arrangedPrograms,
+    jumbledLines, gamePhase
+  };
+  try { localStorage.setItem('jc_state', JSON.stringify(state)); } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('jc_state');
+    if (!raw) return false;
+    const s = JSON.parse(raw);
+    participant = s.participant;
+    startTime = s.startTime;
+    unlockedBlocks = s.unlockedBlocks;
+    currentQuestion = s.currentQuestion;
+    currentBlock = s.currentBlock;
+    answers = s.answers || [];
+    codeBlocks = s.codeBlocks || [];
+    arrangedPrograms = s.arrangedPrograms;
+    jumbledLines = s.jumbledLines || [];
+    gamePhase = s.gamePhase || 'entry';
+    return true;
+  } catch(e) { return false; }
+}
+
+function clearState() {
+  try { localStorage.removeItem('jc_state'); } catch(e) {}
+}
+
+// 3 programs, each with 5 code blocks and Word Connect questions per block
 const PROGRAMS_DATA = [
   {
-    name: 'Hello World Program',
+    name: 'Palindrome Checker (Python)',
     correctOrder: [
-      '# Program 1: Hello World',
-      'def greet(name):',
-      '    message = "Hello, " + name',
-      '    print(message)',
-      'greet("World")'
+      '# Program to check palindrome',
+      'num = input("Enter a number: ")',
+      'rev = num[::-1]',
+      'if num == rev: print("It is a Palindrome")',
+      'else: print("It is not a Palindrome")'
     ],
     questions: [
       [
-        { q: 'What is 2 + 2?', a: '4' },
-        { q: 'What keyword defines a function in Python?', a: 'def' },
-        { q: 'What built-in function displays output in Python?', a: 'print' }
+        { q: 'Class + Object', a: ['object oriented programming', 'oop','oops'] },
+        { q: 'Push + Pop', a: ['stack'] }
       ],
       [
-        { q: 'What is 5 * 3?', a: '15' },
-        { q: 'What symbol starts a comment in Python?', a: '#' },
-        { q: 'What data type is "hello"?', a: 'string' }
+        { q: 'Row + Column + Table', a: ['database', 'sql','structured query language'] },
+        { q: 'HTML + CSS + JavaScript', a: ['web development', 'website building', 'website'] }
       ],
       [
-        { q: 'What is 10 - 4?', a: '6' },
-        { q: 'What operator joins strings together?', a: '+' },
-        { q: 'What is the capital of France?', a: 'Paris' }
+        { q: 'Python + Java + C++', a: ['programming languages','programming language'] },
+        { q: 'Google + Bing + Yahoo', a: ['search engine', 'search engines'] }
       ],
       [
-        { q: 'What is 9 / 3?', a: '3' },
-        { q: 'What are the () after a function name called?', a: 'parentheses' },
-        { q: 'True or False: Python is case-sensitive?', a: 'true' }
+        { q: 'Chrome + Firefox + Edge', a: ['web browser', 'browsers', 'browser'] },
+        { q: 'Git + Commit + Push', a: ['version control'] }
       ],
       [
-        { q: 'What is 7 + 8?', a: '15' },
-        { q: 'What does "def" stand for?', a: 'define' },
-        { q: 'What color is the sky?', a: 'blue' }
+        { q: 'Variable + Data Type + Value', a: ['programming', 'coding','components of programming language','component of programming language','component'] }
       ]
     ]
   },
   {
-    name: 'Counter Program',
+    name: 'Factorial Calculator (C)',
     correctOrder: [
-      '# Program 2: Counter',
-      'count = 0',
-      'for i in range(5):',
-      '    count += 1',
-      'print("Total:", count)'
+      '#include <stdio.h>',
+      'int n, i, factorial = 1;',
+      'printf("Enter a number: "); scanf("%d", &n);',
+      'for(i = 1; i <= n; i++) { factorial = factorial * i; }',
+      'printf("Factorial of %d is %d", n, factorial);'
     ],
     questions: [
       [
-        { q: 'What is 3 + 3?', a: '6' },
-        { q: 'What loop keyword iterates over a sequence?', a: 'for' },
-        { q: 'What does += do?', a: 'add and assign' }
+        { q: 'Router + Switch + Cable', a: ['computer network', 'networking','network'] },
+        { q: 'Username + Password', a: ['authentication', 'login'] }
       ],
       [
-        { q: 'What is 4 * 4?', a: '16' },
-        { q: 'What function generates numbers 0 to n-1?', a: 'range' },
-        { q: 'What is 100 / 10?', a: '10' }
+        { q: 'CPU + RAM + Hard Disk', a: ['computer hardware', 'hardware'] },
+        { q: 'Spam + Malware + Virus', a: ['cyber security threat','cyber security','cyber attack'] }
       ],
       [
-        { q: 'What is 20 - 7?', a: '13' },
-        { q: 'What value does count start at?', a: '0' },
-        { q: 'What planet do we live on?', a: 'earth' }
+        { q: 'Android + iOS', a: ['mobile operating system', 'mobile os','operating system'] },
+        { q: 'Amazon + Flipkart + Meesho', a: ['e-commerce', 'ecommerce'] }
       ],
       [
-        { q: 'What is 6 * 2?', a: '12' },
-        { q: 'How many times does range(5) loop?', a: '5' },
-        { q: 'What is H2O commonly called?', a: 'water' }
+        { q: 'Facebook + Instagram + Twitter', a: ['social media'] }
       ],
       [
-        { q: 'What is 8 - 3?', a: '5' },
-        { q: 'What keyword starts a for loop in Python?', a: 'for' },
-        { q: 'What is the capital of Japan?', a: 'tokyo' }
+        { q: 'Loop + Condition', a: ['control structure','control statement','loopind statement'] }
       ]
     ]
   },
   {
-    name: 'Calculator Program',
+    name: 'Sum Function (Java)',
     correctOrder: [
-      '# Program 3: Calculator',
-      'def add(a, b):',
-      '    return a + b',
-      'result = add(3, 4)',
-      'print("Sum:", result)'
+      'import java.util.Scanner;',
+      'public class SumFunction {',
+      'static int calculateSum(int n) { int sum=0; for(int i=1; i<=n; i++) sum+=i; return sum; }',
+      'Scanner sc = new Scanner(System.in); int num = sc.nextInt();',
+      'System.out.println("Sum = " + calculateSum(num)); sc.close();'
     ],
     questions: [
       [
-        { q: 'What is 1 + 1?', a: '2' },
-        { q: 'What keyword sends a value back from a function?', a: 'return' },
-        { q: 'What is 3 + 4?', a: '7' }
+        { q: 'If + Else', a: ['conditional statement'] },
+        { q: 'Laptop + Desktop', a: ['computer types','types of computers'] }
       ],
       [
-        { q: 'What is 5 + 5?', a: '10' },
-        { q: 'What are a and b in def add(a, b) called?', a: 'parameters' },
-        { q: 'What is the color of grass?', a: 'green' }
+        { q: 'Domain + Website', a: ['web hosting', 'deployment', 'deploying', 'deploy', 'hosting'] },
+        { q: 'Data + Analysis', a: ['data analytics'] }
       ],
       [
-        { q: 'What is 12 / 4?', a: '3' },
-        { q: 'What does the + operator do with numbers?', a: 'add' },
-        { q: 'What is the largest ocean?', a: 'pacific' }
+        { q: 'Cloud + Storage', a: ['cloud computing'] },
+        { q: 'Code + Developer', a: ['software development', 'software developer'] }
       ],
       [
-        { q: 'What is 11 - 5?', a: '6' },
-        { q: 'What stores the output of add(3,4)?', a: 'result' },
-        { q: 'What color is snow?', a: 'white' }
+        { q: 'Zoom + Google Meet', a: ['video conferencing', 'online class'] }
       ],
       [
-        { q: 'What is 2 * 9?', a: '18' },
-        { q: 'Is Python interpreted or compiled?', a: 'interpreted' },
-        { q: 'What is the capital of Germany?', a: 'berlin' }
+        { q: 'Map + Location', a: ['gps'] }
       ]
     ]
   }
@@ -148,44 +160,130 @@ function fmtTime(secs) {
   return m + ':' + s;
 }
 
-function startLiveTimer() {
-  timerEl.style.display = 'block';
-  clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    if (startTime) timerEl.textContent = fmtTime(Math.floor((Date.now() - startTime) / 1000));
-  }, 500);
-}
-
-function stopLiveTimer() {
-  clearInterval(timerInterval);
-}
-
 // ─── Entry Form ─────────────────────────────────────────
+let waitPollId = null;
+
 function renderEntryForm() {
-  timerEl.style.display = 'none';
-  stopLiveTimer();
   app.innerHTML = `
     <div style="text-align:center;margin-bottom:24px">
-      <span style="font-size:3rem;display:block;margin-bottom:8px">🧩</span>
-      <h2 style="font-size:1.5rem">Ready to Crack the Code?</h2>
-      <p>Answer questions to unlock code blocks. Unlock 5 blocks, arrange the jumbled code. Complete <b style="color:#e2e8f0">3 programs</b> to hit the leaderboard!</p>
+      <img src="/logo.jpg" alt="Rabbit Coders" style="height:90px;border-radius:12px;margin-bottom:8px">
+      <h2 style="font-size:1.5rem">Rabbit Coders</h2>
+      <p>Choose how you'd like to enter</p>
     </div>
-    <form id="entry-form">
-      <label style="font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;display:block;margin-bottom:8px">Your Name</label>
-      <input type="text" id="name" placeholder="e.g. Alex" required autocomplete="off" />
-      <button class="btn" type="submit" style="width:100%">🚀 Start Challenge</button>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+      <button class="btn" id="btn-participant" style="flex:1;min-width:180px">🎮 Participant</button>
+      <button class="btn btn-secondary" id="btn-admin" style="flex:1;min-width:180px">🔐 Admin</button>
+    </div>
+  `;
+  document.getElementById('btn-participant').onclick = renderParticipantForm;
+  document.getElementById('btn-admin').onclick = renderAdminLogin;
+}
+
+function renderAdminLogin() {
+  app.innerHTML = `
+    <div style="text-align:center;margin-bottom:24px">
+      <img src="/logo.jpg" alt="Rabbit Coders" style="height:80px;border-radius:12px;margin-bottom:8px">
+      <h2 style="font-size:1.5rem">Admin Login</h2>
+    </div>
+    <form id="admin-form">
+      <label style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#a78bfa;display:block;margin-bottom:8px">Username</label>
+      <input type="text" id="admin-user" placeholder="Admin username" required autocomplete="off" />
+      <label style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#a78bfa;display:block;margin-bottom:8px;margin-top:12px">Password</label>
+      <input type="text" id="admin-pass" placeholder="Password" required autocomplete="off" style="-webkit-text-security:disc" />
+      <div id="admin-error"></div>
+      <button class="btn" type="submit" style="width:100%">Login</button>
+      <button class="btn btn-secondary" type="button" id="admin-back" style="width:100%">← Back</button>
     </form>
   `;
-  document.getElementById('entry-form').onsubmit = e => {
+  document.getElementById('admin-back').onclick = renderEntryForm;
+  document.getElementById('admin-form').onsubmit = async e => {
+    e.preventDefault();
+    const username = document.getElementById('admin-user').value.trim();
+    const password = document.getElementById('admin-pass').value.trim();
+    document.getElementById('admin-error').innerHTML = '';
+    try {
+      const res = await fetch('/api/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        sessionStorage.setItem('jc_admin', JSON.stringify({ username, password }));
+        window.location.href = '/admin.html';
+      } else {
+        document.getElementById('admin-error').innerHTML = '<p class="error">Invalid username or password.</p>';
+      }
+    } catch (err) {
+      document.getElementById('admin-error').innerHTML = '<p class="error">Connection error.</p>';
+    }
+  };
+}
+
+function renderParticipantForm() {
+  app.innerHTML = `
+    <div style="text-align:center;margin-bottom:24px">
+      <img src="/logo.jpg" alt="Rabbit Coders" style="height:80px;border-radius:12px;margin-bottom:8px">
+      <h2 style="font-size:1.5rem">Ready to Crack the Code?</h2>
+      <p>Solve <b style="color:#7c3aed">Word Connect</b> puzzles to unlock code blocks. Unlock 5 blocks, arrange the jumbled code. Complete <b style="color:#7c3aed">3 programs</b> to hit the leaderboard!</p>
+    </div>
+    <form id="entry-form">
+      <label style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#a78bfa;display:block;margin-bottom:8px">Team Name</label>
+      <input type="text" id="name" placeholder="e.g. Code Breakers" required autocomplete="off" />
+      <label style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#a78bfa;display:block;margin-bottom:8px;margin-top:12px">Department</label>
+      <input type="text" id="dept" placeholder="e.g. Computer Science" required autocomplete="off" />
+      <label style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#a78bfa;display:block;margin-bottom:8px;margin-top:12px">College Name</label>
+      <input type="text" id="college" placeholder="e.g. ABC Engineering College" required autocomplete="off" />
+      <div id="entry-error"></div>
+      <button class="btn" type="submit" style="width:100%">🚀 Join Challenge</button>
+      <button class="btn btn-secondary" type="button" id="entry-back" style="width:100%">← Back</button>
+    </form>
+  `;
+  document.getElementById('entry-back').onclick = renderEntryForm;
+  document.getElementById('entry-form').onsubmit = async e => {
     e.preventDefault();
     const name = document.getElementById('name').value.trim();
-    if (!name) return;
-    participant = { name };
+    const dept = document.getElementById('dept').value.trim();
+    const college = document.getElementById('college').value.trim();
+    if (!name || !dept || !college) return;
+    participant = { name, dept, college };
     startTime = Date.now();
     arrangedPrograms = 0;
-    startLiveTimer();
-    startProgram();
+    gamePhase = 'waiting';
+    saveState();
+    renderWaitingRoom();
   };
+}
+
+function renderWaitingRoom() {
+  if (waitPollId) clearInterval(waitPollId);
+  app.innerHTML = `
+    <div style="text-align:center">
+      <span style="font-size:3rem;display:block;margin-bottom:8px;animation:bounce 1s ease infinite">⏳</span>
+      <h2 style="font-size:1.5rem">Waiting for Admin to Start</h2>
+      <p>Welcome, <b style="color:var(--purple)">${esc(participant.name)}</b>!</p>
+      <p style="color:var(--text-muted);font-size:.85rem">${esc(participant.dept)} · ${esc(participant.college)}</p>
+      <div class="progress-bar" style="margin:24px 0"><div class="progress-fill" style="width:100%;animation:pulse 2s ease-in-out infinite"></div></div>
+      <p style="color:var(--text-muted);font-size:.85rem">The game will begin once the admin starts it. Hang tight!</p>
+      <div id="wait-status" style="margin-top:12px"></div>
+    </div>
+  `;
+  checkGameStatus();
+  waitPollId = setInterval(checkGameStatus, 2000);
+}
+
+async function checkGameStatus() {
+  try {
+    const res = await fetch('/api/game-status');
+    const data = await res.json();
+    if (data.started) {
+      if (waitPollId) { clearInterval(waitPollId); waitPollId = null; }
+      startProgram();
+    }
+  } catch (e) {
+    const el = document.getElementById('wait-status');
+    if (el) el.innerHTML = '<p class="error" style="font-size:.8rem">Connection error — retrying...</p>';
+  }
 }
 
 // ─── Start a program round ──────────────────────────────
@@ -200,6 +298,8 @@ function startProgram() {
 function renderQuestions() {
   currentQuestion = 0;
   answers = [];
+  gamePhase = 'questions';
+  saveState();
   const prog = PROGRAMS_DATA[arrangedPrograms];
   app.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
@@ -219,11 +319,16 @@ function renderQuestions() {
 
 function renderQuestion() {
   const prog = PROGRAMS_DATA[arrangedPrograms];
-  const q = prog.questions[currentBlock][currentQuestion];
+  const blockQs = prog.questions[currentBlock];
+  const q = blockQs[currentQuestion];
+  const words = q.q.split(' + ').map(w => w.trim());
   document.getElementById('question-area').innerHTML = `
     <div class="question-card">
-      <div class="q-label">Question ${currentQuestion + 1} of 3</div>
-      <div class="q-text">${esc(q.q)}</div>
+      <div class="q-label">Word Connect ${currentQuestion + 1} of ${blockQs.length}</div>
+      <div class="q-text" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:18px">
+        ${words.map(w => `<span style="background:linear-gradient(135deg,#ede9fe,#fce7f3);padding:8px 18px;border-radius:12px;font-weight:800;border:2px solid #d8b4fe">${esc(w)}</span>`).join('<span style="font-size:1.3rem;color:#a78bfa;font-weight:800">+</span>')}
+      </div>
+      <p style="font-size:.85rem;color:#a78bfa;margin-bottom:12px">What do these words connect to?</p>
       <input type="text" id="answer" placeholder="Type your answer..." autofocus autocomplete="off" />
       <button class="btn" id="submit-btn" style="width:100%">Submit Answer</button>
     </div>
@@ -235,14 +340,16 @@ function renderQuestion() {
 
 function submitAnswer() {
   const prog = PROGRAMS_DATA[arrangedPrograms];
-  const q = prog.questions[currentBlock][currentQuestion];
+  const blockQs = prog.questions[currentBlock];
+  const q = blockQs[currentQuestion];
   const val = document.getElementById('answer').value.trim();
   if (!val) { document.getElementById('q-feedback').innerHTML = '<p class="error">Please enter an answer.</p>'; return; }
-  if (val.toLowerCase() === q.a.toLowerCase()) {
+  const isCorrect = q.a.some(ans => val.toLowerCase() === ans.toLowerCase());
+  if (isCorrect) {
     answers.push(val);
     currentQuestion++;
-    if (currentQuestion < 3) {
-      document.getElementById('q-feedback').innerHTML = '<p class="success">Correct!</p>';
+    if (currentQuestion < blockQs.length) {
+      document.getElementById('q-feedback').innerHTML = '<p class="success">Correct! 🎉</p>';
       setTimeout(renderQuestion, 500);
     } else {
       unlockBlock();
@@ -259,6 +366,8 @@ function unlockBlock() {
   unlockedBlocks++;
   currentBlock++;
   if (unlockedBlocks < 5) {
+    gamePhase = 'unlocked';
+    saveState();
     renderUnlockedBlocks();
   } else {
     renderArrange();
@@ -278,8 +387,8 @@ function renderUnlockedBlocks() {
     </div>
     <p class="success" style="font-weight:600">✓ You unlocked a new code block!</p>
     <div class="section-label">Unlocked Code Blocks</div>
-    ${codeBlocks.map((c, i) => `<div class="code-block" style="cursor:default;border-left-color:var(--emerald)"><span style="color:var(--emerald);font-weight:700;margin-right:8px">${i+1}.</span>${esc(c)}</div>`).join('')}
-    <button class="btn" id="next-btn" style="width:100%">Answer Next 3 Questions →</button>
+    ${codeBlocks.map((c, i) => `<div class="code-block" style="cursor:default;border-left-color:var(--green)"><span style="color:var(--green);font-weight:700;margin-right:8px">${i+1}.</span>${esc(c)}</div>`).join('')}
+    <button class="btn" id="next-btn" style="width:100%">Next Word Connect →</button>
   `;
   document.getElementById('next-btn').onclick = renderQuestions;
 }
@@ -287,10 +396,14 @@ function renderUnlockedBlocks() {
 // ─── Arrange ────────────────────────────────────────────
 function renderArrange() {
   const prog = PROGRAMS_DATA[arrangedPrograms];
-  jumbledLines = [...prog.correctOrder].sort(() => Math.random() - 0.5);
-  if (jumbledLines.every((l, i) => l === prog.correctOrder[i])) {
-    jumbledLines.reverse();
+  if (gamePhase !== 'arrange' || jumbledLines.length === 0) {
+    jumbledLines = [...prog.correctOrder].sort(() => Math.random() - 0.5);
+    if (jumbledLines.every((l, i) => l === prog.correctOrder[i])) {
+      jumbledLines.reverse();
+    }
   }
+  gamePhase = 'arrange';
+  saveState();
   let selected = [];
   app.innerHTML = `
     <div style="text-align:center;margin-bottom:16px">
@@ -337,16 +450,9 @@ function renderArrange() {
     const correct = userOrder.every((line, i) => line === prog.correctOrder[i]);
     if (correct) {
       arrangedPrograms++;
+      saveState();
       if (arrangedPrograms < 3) {
-        app.innerHTML = `
-          <div class="celebrate">
-            <span class="big-icon">🎉</span>
-            <h2 style="color:var(--emerald)">Program Arranged Correctly!</h2>
-            <p>Great job! <b style="color:#e2e8f0">${3 - arrangedPrograms}</b> program(s) remaining.</p>
-            <button class="btn" id="next-prog" style="width:100%">Next Program →</button>
-          </div>
-        `;
-        document.getElementById('next-prog').onclick = startProgram;
+        showIntermediateResult();
       } else {
         finishChallenge();
       }
@@ -358,19 +464,37 @@ function renderArrange() {
 
 function updateSelected(selected) {
   document.getElementById('arrange-selected').innerHTML = selected.length === 0
-    ? '<p style="color:var(--slate-500);text-align:center;margin:16px 0;font-size:.9rem">Click blocks above in order...</p>'
-    : selected.map((i, pos) => `<div class="code-block" style="border-left-color:var(--emerald);cursor:default"><span style="color:var(--emerald);font-weight:700;margin-right:8px">${pos+1}.</span>${esc(jumbledLines[i])}</div>`).join('');
+    ? '<p style="color:#a78bfa;text-align:center;margin:16px 0;font-size:.9rem">Click blocks above in order...</p>'
+    : selected.map((i, pos) => `<div class="code-block" style="border-left-color:var(--green);cursor:default"><span style="color:var(--green);font-weight:700;margin-right:8px">${pos+1}.</span>${esc(jumbledLines[i])}</div>`).join('');
+}
+
+// ─── Intermediate Result (after each program) ──────────
+async function showIntermediateResult() {
+  gamePhase = 'intermediate';
+  saveState();
+  const elapsed = Math.floor((Date.now() - startTime) / 1000);
+  app.innerHTML = `
+    <div class="celebrate">
+      <span class="big-icon">🎉</span>
+      <h2 style="color:var(--green)">Program Arranged Correctly!</h2>
+      <p>Great job, <b style="color:var(--purple)">${esc(participant.name)}</b>! <b style="color:var(--purple)">${3 - arrangedPrograms}</b> program(s) remaining.</p>
+      <p>Your time so far: <span class="timer" style="font-size:1.4rem">${fmtTime(elapsed)}</span></p>
+    </div>
+    <div id="lb-area"></div>
+  `;
+  await renderLeaderboard('next');
 }
 
 // ─── Finish & Leaderboard ───────────────────────────────
 async function finishChallenge() {
-  stopLiveTimer();
+  gamePhase = 'finished';
+  clearState();
   const elapsed = Math.floor((Date.now() - startTime) / 1000);
   app.innerHTML = `
     <div class="celebrate">
       <span class="big-icon">🏆</span>
-      <h2 style="color:var(--amber);font-size:1.6rem">Challenge Complete!</h2>
-      <p>Congratulations, <b style="color:#e2e8f0">${esc(participant.name)}</b>! You arranged all 3 programs.</p>
+      <h2 style="color:var(--orange);font-size:1.6rem">Challenge Complete!</h2>
+      <p>Congratulations, <b style="color:var(--purple)">${esc(participant.name)}</b>! You arranged all 3 programs.</p>
       <p>Your time: <span class="timer" style="font-size:1.4rem">${fmtTime(elapsed)}</span></p>
       <p style="font-size:.85rem">Saving to leaderboard...</p>
     </div>
@@ -385,14 +509,21 @@ async function finishChallenge() {
   } catch (e) {
     console.error('Leaderboard save error:', e);
   }
-  await renderLeaderboard(elapsed);
+  await renderLeaderboard('restart');
 }
 
-async function renderLeaderboard(myTime) {
+async function renderLeaderboard(mode) {
   const lbArea = document.getElementById('lb-area');
   lbArea.innerHTML = '<p style="text-align:center">Loading leaderboard...</p>';
+  const btnHtml = mode === 'next'
+    ? '<button class="btn" id="next-prog" style="width:100%;margin-top:16px">Next Program →</button>'
+    : '<button class="btn" id="restart-btn" style="width:100%;margin-top:16px">🔄 Play Again</button>';
+  const attachBtn = () => {
+    if (mode === 'next') { document.getElementById('next-prog').onclick = startProgram; }
+    else { document.getElementById('restart-btn').onclick = () => { clearState(); renderEntryForm(); }; }
+  };
   try {
-    if (!sb) { lbArea.innerHTML = '<p style="text-align:center;color:var(--slate-500)">Leaderboard unavailable (no database connection).</p>'; lbArea.innerHTML += '<button class="btn" id="restart-btn" style="width:100%;margin-top:16px">🔄 Play Again</button>'; document.getElementById('restart-btn').onclick = renderEntryForm; return; }
+    if (!sb) { lbArea.innerHTML = '<p style="text-align:center;color:#a78bfa">Leaderboard unavailable (no database connection).</p>'; lbArea.innerHTML += btnHtml; attachBtn(); return; }
     const { data, error } = await sb
       .from('leaderboard')
       .select('*')
@@ -421,9 +552,23 @@ async function renderLeaderboard(myTime) {
     console.error(e);
     lbArea.innerHTML = '<p class="error">Could not load leaderboard.</p>';
   }
-  lbArea.innerHTML += '<button class="btn" id="restart-btn" style="width:100%;margin-top:16px">🔄 Play Again</button>';
-  document.getElementById('restart-btn').onclick = renderEntryForm;
+  lbArea.innerHTML += btnHtml;
+  attachBtn();
 }
 
 // ─── Start ──────────────────────────────────────────────
-renderEntryForm();
+function resumeGame() {
+  if (!loadState() || !participant || gamePhase === 'entry') {
+    renderEntryForm();
+    return;
+  }
+  switch (gamePhase) {
+    case 'waiting':     renderWaitingRoom(); break;
+    case 'questions':   renderQuestions(); break;
+    case 'unlocked':    renderUnlockedBlocks(); break;
+    case 'arrange':     renderArrange(); break;
+    case 'intermediate': showIntermediateResult(); break;
+    default:            renderEntryForm();
+  }
+}
+resumeGame();
