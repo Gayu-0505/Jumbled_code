@@ -54,6 +54,70 @@ app.post('/api/game-stop', (req, res) => {
   res.json({ ok: true, started: false });
 });
 
+// ─── Leaderboard API (server-side Supabase proxy) ───────
+app.get('/api/leaderboard', async (req, res) => {
+  const sbUrl = process.env.SUPABASE_URL;
+  const sbKey = process.env.SUPABASE_ANON_KEY;
+  if (!sbUrl || !sbKey) {
+    return res.status(500).json({ ok: false, error: 'Supabase not configured' });
+  }
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+    const response = await fetch(
+      `${sbUrl}/rest/v1/leaderboard?select=*&programs_completed=eq.3&order=time_seconds.asc&limit=${limit}`,
+      {
+        headers: {
+          'apikey': sbKey,
+          'Authorization': `Bearer ${sbKey}`
+        }
+      }
+    );
+    if (!response.ok) {
+      const text = await response.text();
+      return res.status(response.status).json({ ok: false, error: text });
+    }
+    const data = await response.json();
+    res.json({ ok: true, data });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.post('/api/leaderboard', async (req, res) => {
+  const sbUrl = process.env.SUPABASE_URL;
+  const sbKey = process.env.SUPABASE_ANON_KEY;
+  if (!sbUrl || !sbKey) {
+    return res.status(500).json({ ok: false, error: 'Supabase not configured' });
+  }
+  const { name, programs_completed, time_seconds } = req.body || {};
+  if (!name || typeof time_seconds !== 'number') {
+    return res.status(400).json({ ok: false, error: 'Missing name or time_seconds' });
+  }
+  try {
+    const response = await fetch(
+      `${sbUrl}/rest/v1/leaderboard`,
+      {
+        method: 'POST',
+        headers: {
+          'apikey': sbKey,
+          'Authorization': `Bearer ${sbKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({ name, programs_completed: programs_completed || 3, time_seconds })
+      }
+    );
+    if (!response.ok) {
+      const text = await response.text();
+      return res.status(response.status).json({ ok: false, error: text });
+    }
+    const data = await response.json();
+    res.json({ ok: true, data });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 app.post('/api/reset-leaderboard', async (req, res) => {
   const { username, password } = req.body || {};
   if (username !== ADMIN_USER || password !== ADMIN_PASS) {

@@ -164,17 +164,7 @@
         </div>
     </div>
 
-    <script src="/config.js"></script>
     <script>
-        const SUPABASE_URL = window.__SUPABASE_URL__ || '';
-        const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || '';
-        let sb = null;
-        try {
-            if (window.supabase && window.supabase.createClient && SUPABASE_URL) {
-                sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            }
-        } catch (e) { console.warn('Supabase init failed:', e); }
-
         let adminCreds = null;
 
         function esc(s) {
@@ -304,20 +294,11 @@
             const countBadge = document.getElementById('count-badge');
             const lastUpdate = document.getElementById('last-update');
 
-            if (!sb) {
-                lbContent.innerHTML = '<p class="error">No database connection. Set SUPABASE_URL and SUPABASE_ANON_KEY in .env</p>';
-                return;
-            }
-
             try {
-                const { data, error } = await sb
-                    .from('leaderboard')
-                    .select('*')
-                    .eq('programs_completed', 3)
-                    .order('time_seconds', { ascending: true })
-                    .limit(50);
-
-                if (error) throw error;
+                const res = await fetch('/api/leaderboard?limit=50');
+                const result = await res.json();
+                if (!result.ok) throw new Error(result.error || 'Server error');
+                const data = result.data;
 
                 const now = new Date();
                 lastUpdate.textContent = 'Updated: ' + now.toLocaleTimeString();
@@ -342,8 +323,8 @@
                     </table>
                 `;
             } catch (e) {
-                console.error(e);
-                lbContent.innerHTML = '<p class="error">Could not load leaderboard.</p>';
+                console.error('Leaderboard error:', e);
+                lbContent.innerHTML = '<p class="error">Could not load leaderboard: ' + esc(e.message) + '</p>';
             }
         }
 

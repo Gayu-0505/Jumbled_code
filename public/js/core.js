@@ -1,12 +1,4 @@
-// Supabase config — set these in a <script> tag or env config before loading this file
-const SUPABASE_URL = window.__SUPABASE_URL__ || '';
-const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || '';
-let sb = null;
-try {
-  if (window.supabase && window.supabase.createClient) {
-    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  }
-} catch (e) { console.warn('Supabase init failed:', e); }
+// API-based leaderboard (all Supabase calls go through server)
 
 const app = document.getElementById('app');
 
@@ -104,11 +96,11 @@ const PROGRAMS_DATA = [
       ],
       [
         { q: 'CPU + RAM + Hard Disk', a: ['computer hardware', 'hardware'] },
-        { q: 'Spam + Malware + Virus', a: ['cyber security threat','cyber security','cyber attack'] }
+        { q: 'Spam + Malware + Virus', a: ['cyber security threat','cyber security','cyber attack','cybersecurity threat'] }
       ],
       [
         { q: 'Android + iOS', a: ['mobile operating system', 'mobile os','operating system'] },
-        { q: 'Amazon + Flipkart + Meesho', a: ['e-commerce', 'ecommerce'] }
+        { q: 'Amazon + Flipkart + Meesho', a: ['e-commerce', 'ecommerce','e commerce'] }
       ],
       [
         { q: 'Facebook + Instagram + Twitter', a: ['social media'] }
@@ -501,11 +493,11 @@ async function finishChallenge() {
     <div id="lb-area"></div>
   `;
   try {
-    if (sb) await sb.from('leaderboard').insert([{
-      name: participant.name,
-      programs_completed: 3,
-      time_seconds: elapsed
-    }]);
+    await fetch('/api/leaderboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: participant.name, programs_completed: 3, time_seconds: elapsed })
+    });
   } catch (e) {
     console.error('Leaderboard save error:', e);
   }
@@ -523,14 +515,10 @@ async function renderLeaderboard(mode) {
     else { document.getElementById('restart-btn').onclick = () => { clearState(); renderEntryForm(); }; }
   };
   try {
-    if (!sb) { lbArea.innerHTML = '<p style="text-align:center;color:#a78bfa">Leaderboard unavailable (no database connection).</p>'; lbArea.innerHTML += btnHtml; attachBtn(); return; }
-    const { data, error } = await sb
-      .from('leaderboard')
-      .select('*')
-      .eq('programs_completed', 3)
-      .order('time_seconds', { ascending: true })
-      .limit(20);
-    if (error) throw error;
+    const res = await fetch('/api/leaderboard?limit=20');
+    const result = await res.json();
+    if (!result.ok) throw new Error(result.error || 'Server error');
+    const data = result.data;
     if (!data || data.length === 0) {
       lbArea.innerHTML = '<p style="text-align:center">No entries yet. You are the first! 🎉</p>';
     } else {
