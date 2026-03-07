@@ -76,7 +76,7 @@ const PROGRAMS_DATA = [
         { q: 'Git + Commit + Push', a: ['version control'] }
       ],
       [
-        { q: 'Variable + Data Type + Value', a: ['programming', 'coding','components of programming language','component of programming language','component'] }
+        { q: 'Code + Compile + Run', a: ['program execution', 'programming process'] }
       ]
     ]
   },
@@ -96,33 +96,33 @@ const PROGRAMS_DATA = [
       ],
       [
         { q: 'CPU + RAM + Hard Disk', a: ['computer hardware', 'hardware'] },
-        { q: 'Spam + Malware + Virus', a: ['cyber security threat','cyber security','cyber attack','cybersecurity threat'] }
+        { q: 'Spam + Malware + Virus', a: ['cyber security threat','cyber security threat','cyber security','cyber attack','cyber attacks','cybersecurity threats','cybersecurity threat'] }
       ],
       [
-        { q: 'Android + iOS', a: ['mobile operating system', 'mobile os','operating system'] },
-        { q: 'Amazon + Flipkart + Meesho', a: ['e-commerce', 'ecommerce','e commerce'] }
+        { q: 'Android + iOS', a: ['mobile operating system', 'mobile os','operating system','Mobile operating systems','operating systems'] },
+        { q: 'Amazon + Flipkart + Meesho', a: ['e-commerce', 'ecommerce','e commerce','e-commerce website','Online shopping'] }
       ],
       [
-        { q: 'Facebook + Instagram + Twitter', a: ['social media'] }
+        { q: 'Facebook + Instagram + Twitter', a: ['social media','Social media platforms',' social media sites'] }
       ],
       [
-        { q: 'Loop + Condition', a: ['control structure','control statement','loopind statement'] }
+        { q: 'Loop + Condition', a: ['control structure','control statement','looping statement'] }
       ]
     ]
   },
   {
-    name: 'Sum Function (Java)',
+    name: 'Prime Number Checker (Java)',
     correctOrder: [
       'import java.util.Scanner;',
-      'public class SumFunction {',
-      'static int calculateSum(int n) { int sum=0; for(int i=1; i<=n; i++) sum+=i; return sum; }',
+      'public class PrimeCheck {',
+      'static boolean isPrime(int n) { if(n<=1) return false; for(int i=2; i<=Math.sqrt(n); i++) if(n%i==0) return false; return true; }',
       'Scanner sc = new Scanner(System.in); int num = sc.nextInt();',
-      'System.out.println("Sum = " + calculateSum(num)); sc.close();'
+      'System.out.println(num + (isPrime(num) ? " is Prime" : " is not Prime")); sc.close();'
     ],
     questions: [
       [
         { q: 'If + Else', a: ['conditional statement'] },
-        { q: 'Laptop + Desktop', a: ['computer types','types of computers'] }
+        { q: 'Laptop + Desktop', a: ['computer types','types of computers','Personal computers','computing devices','computer systems','computers','PC'] }
       ],
       [
         { q: 'Domain + Website', a: ['web hosting', 'deployment', 'deploying', 'deploy', 'hosting'] },
@@ -133,7 +133,7 @@ const PROGRAMS_DATA = [
         { q: 'Code + Developer', a: ['software development', 'software developer'] }
       ],
       [
-        { q: 'Zoom + Google Meet', a: ['video conferencing', 'online class'] }
+        { q: 'Zoom + Google Meet', a: ['video conferencing', 'online class','online meet','online meeting'] }
       ],
       [
         { q: 'Map + Location', a: ['gps'] }
