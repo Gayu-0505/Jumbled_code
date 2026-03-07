@@ -6,8 +6,8 @@ const app = express();
 app.use(express.json());
 
 // ─── Admin credentials (from .env or defaults) ─────────
-const ADMIN_USER = process.env.ADMIN_USER || 'admin';
-const ADMIN_PASS = process.env.ADMIN_PASS || 'rbcd1303';
+const ADMIN_USER = (process.env.ADMIN_USER || 'admin').trim();
+const ADMIN_PASS = (process.env.ADMIN_PASS || 'rbcd1303').trim();
 
 // ─── Game state (in-memory) ─────────────────────────────
 let gameStarted = false;
@@ -56,8 +56,8 @@ app.post('/api/game-stop', (req, res) => {
 
 // ─── Leaderboard API (server-side Supabase proxy) ───────
 app.get('/api/leaderboard', async (req, res) => {
-  const sbUrl = process.env.SUPABASE_URL;
-  const sbKey = process.env.SUPABASE_ANON_KEY;
+  const sbUrl = (process.env.SUPABASE_URL || '').trim();
+  const sbKey = (process.env.SUPABASE_ANON_KEY || '').trim();
   if (!sbUrl || !sbKey) {
     return res.status(500).json({ ok: false, error: 'Supabase not configured' });
   }
@@ -84,8 +84,8 @@ app.get('/api/leaderboard', async (req, res) => {
 });
 
 app.post('/api/leaderboard', async (req, res) => {
-  const sbUrl = process.env.SUPABASE_URL;
-  const sbKey = process.env.SUPABASE_ANON_KEY;
+  const sbUrl = (process.env.SUPABASE_URL || '').trim();
+  const sbKey = (process.env.SUPABASE_ANON_KEY || '').trim();
   if (!sbUrl || !sbKey) {
     return res.status(500).json({ ok: false, error: 'Supabase not configured' });
   }
@@ -123,8 +123,8 @@ app.post('/api/reset-leaderboard', async (req, res) => {
   if (username !== ADMIN_USER || password !== ADMIN_PASS) {
     return res.status(401).json({ ok: false, error: 'Unauthorized' });
   }
-  const sbUrl = process.env.SUPABASE_URL;
-  const sbServiceKey = process.env.SUPABASE_SERVICE_KEY;
+  const sbUrl = (process.env.SUPABASE_URL || '').trim();
+  const sbServiceKey = (process.env.SUPABASE_SERVICE_KEY || '').trim();
   if (!sbUrl || !sbServiceKey) {
     return res.json({ ok: false, error: 'No SUPABASE_SERVICE_KEY set in .env — needed for delete operations' });
   }
