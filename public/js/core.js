@@ -52,31 +52,31 @@ const PROGRAMS_DATA = [
   {
     name: 'Palindrome Checker (Python)',
     correctOrder: [
-      '# Program to check palindrome',
       'num = input("Enter a number: ")',
+      'num = num.strip()',
       'rev = num[::-1]',
       'if num == rev: print("It is a Palindrome")',
       'else: print("It is not a Palindrome")'
     ],
     questions: [
       [
-        { q: 'Class + Object', a: ['object oriented programming', 'oop','oops'] },
-        { q: 'Push + Pop', a: ['stack'] }
+        { q: 'Class + Object', a: ['object oriented programming', 'oop','oops','Object based programming','oop concept'] },
+        { q: 'Push + Pop', a: ['stack','stack data structure', 'LIFO', 'Last In First Out', 'Last In, First Out',] }
       ],
       [
-        { q: 'Row + Column + Table', a: ['database', 'sql','structured query language'] },
-        { q: 'HTML + CSS + JavaScript', a: ['web development', 'website building', 'website'] }
+        { q: 'Row + Column + Table', a: ['database', 'sql','structured query language','Relational database','Dbms','Database Management System','DBMS'] },
+        { q: 'HTML + CSS + JavaScript', a: ['web development', 'website building', 'website','Frontend development','Website development','Web technology'] }
       ],
       [
-        { q: 'Python + Java + C++', a: ['programming languages','programming language'] },
-        { q: 'Google + Bing + Yahoo', a: ['search engine', 'search engines'] }
+        { q: 'Python + Java + C++', a: ['programming languages','programming language','coding languages','High level languages','High level language','Computer languages'] },
+        { q: 'Google + Bing + Yahoo', a: ['search engine', 'search engines', 'search portal', 'search website', 'search results','Web search engine','Web search engines'] }
       ],
       [
-        { q: 'Chrome + Firefox + Edge', a: ['web browser', 'browsers', 'browser'] },
-        { q: 'Git + Commit + Push', a: ['version control'] }
+        { q: 'Chrome + Firefox + Edge', a: ['web browser', 'browsers', 'browser','internet Browser','Browser software','internet Browsers','Browser softwares'] },
+        { q: 'Git + Commit + Push', a: ['version control','Version control system','Git version control','git workflow','git operations'] }
       ],
       [
-        { q: 'Code + Compile + Run', a: ['program execution', 'programming process'] }
+        { q: 'Code + Compile + Run', a: ['program execution', 'programming process','program development','program life cycle','software development','coding process','Build process','Compile process','Program compilation','program workflow','code execution'] }
       ]
     ]
   },
@@ -91,22 +91,22 @@ const PROGRAMS_DATA = [
     ],
     questions: [
       [
-        { q: 'Router + Switch + Cable', a: ['computer network', 'networking','network'] },
-        { q: 'Username + Password', a: ['authentication', 'login'] }
+        { q: 'Router + Switch + Cable', a: ['computer network', 'networking','network','networking devices','network infrastructure',] },
+        { q: 'Username + Password', a: ['authentication', 'login','user credentials','user authentication','access control'] }
       ],
       [
-        { q: 'CPU + RAM + Hard Disk', a: ['computer hardware', 'hardware'] },
-        { q: 'Spam + Malware + Virus', a: ['cyber security threat','cyber security threat','cyber security','cyber attack','cyber attacks','cybersecurity threats','cybersecurity threat'] }
+        { q: 'CPU + RAM + Hard Disk', a: ['computer hardware', 'hardware','hardware components','computer components'] },
+        { q: 'Spam + Malware + Virus', a: ['cyber security threat','cyber security','cyber attack','cyber attacks','cybersecurity threats','cybersecurity threat','security threat','security threats','cyber threat','cyber threats','malware attack'] }
       ],
       [
-        { q: 'Android + iOS', a: ['mobile operating system', 'mobile os','operating system','Mobile operating systems','operating systems'] },
-        { q: 'Amazon + Flipkart + Meesho', a: ['e-commerce', 'ecommerce','e commerce','e-commerce website','Online shopping'] }
+        { q: 'Android + iOS', a: ['mobile operating system', 'mobile os','operating system','Mobile operating systems','operating systems','smartphone os','smart phone os'] },
+        { q: 'Amazon + Flipkart + Meesho', a: ['e-commerce', 'ecommerce','e commerce','e-commerce website','Online shopping','e commerce website','Online marketplace'] }
       ],
       [
-        { q: 'Facebook + Instagram + Twitter', a: ['social media','Social media platforms',' social media sites'] }
+        { q: 'Facebook + Instagram + Twitter', a: ['social media','Social media platforms','social media sites','social networking sites','social networking','social platforms'] }
       ],
       [
-        { q: 'Loop + Condition', a: ['control structure','control statement','looping statement'] }
+        { q: 'Loop + Condition', a: ['control structure','control statement','looping statement','control flow','Looping structure'] }
       ]
     ]
   },
@@ -121,22 +121,22 @@ const PROGRAMS_DATA = [
     ],
     questions: [
       [
-        { q: 'If + Else', a: ['conditional statement'] },
+        { q: 'If + Else', a: ['conditional statement','Decision making statement','control statement','condition','decision statement'] },
         { q: 'Laptop + Desktop', a: ['computer types','types of computers','Personal computers','computing devices','computer systems','computers','PC'] }
       ],
       [
-        { q: 'Domain + Website', a: ['web hosting', 'deployment', 'deploying', 'deploy', 'hosting'] },
-        { q: 'Data + Analysis', a: ['data analytics'] }
+        { q: 'Domain + Website', a: ['web hosting', 'deployment', 'deploying', 'deploy', 'hosting','website hosting','website deployment'] },
+        { q: 'Data + Analysis', a: ['data analytics','data analysis','data science',] }
       ],
       [
-        { q: 'Cloud + Storage', a: ['cloud computing'] },
-        { q: 'Code + Developer', a: ['software development', 'software developer'] }
+        { q: 'Cloud + Storage', a: ['cloud computing','cloud storage','online storage'] },
+        { q: 'Code + Developer', a: ['software development', 'software engineer','software developer','programming','coding'] }
       ],
       [
-        { q: 'Zoom + Google Meet', a: ['video conferencing', 'online class','online meet','online meeting'] }
+        { q: 'Zoom + Google Meet', a: ['video conferencing', 'online class','online meet','online meeting','virtual meet'] }
       ],
       [
-        { q: 'Map + Location', a: ['gps'] }
+        { q: 'Map + Location', a: ['gps','global positioning system','Location services','navigation'] }
       ]
     ]
   }
